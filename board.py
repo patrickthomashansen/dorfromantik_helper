@@ -227,17 +227,21 @@ class DorfBoard:
                 return DorfBoardResult.ILLEGAL
         # Compute the number of adjecent tiles that would become perfects
         num_perfects = 0
+        num_meh_connections = 0
         neighbors = self.get_neighboring_tiles(x, y)
-        for x_, y_ in neighbors:
-            num_good_connections, _ = self.get_num_good_and_bad_connections(x_, y_)
-            if num_good_connections == NUM_HEXA_EDGES-1:
+        for edge_index, (x_, y_) in enumerate(neighbors):
+            num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x_, y_)
+            is_good = self.is_good_connection(x, y, edge_index, tile)
+            if num_good_connections == NUM_HEXA_EDGES-1 and is_good:
                 num_perfects += 1
+            elif num_bad_connections > 0 and not is_good:
+                num_meh_connections += 1
         # Compute the number of good and bad connections
         num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x, y, tile)
         if num_good_connections == NUM_HEXA_EDGES:
             num_perfects += 1
         # Give a proxy score
-        score = 0.5*num_perfects + num_good_connections - 2*num_bad_connections
+        score = 0.5*num_perfects + num_good_connections - 1.5*num_bad_connections + 0.5*num_meh_connections
         return score, num_perfects, num_good_connections, num_bad_connections
 
 

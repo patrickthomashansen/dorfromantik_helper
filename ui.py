@@ -6,26 +6,31 @@ from constants import *
 
 
 class HexaGridCanvas(Canvas):
-    def __init__(self, master, board, slices, pix_width=1000, pix_height=1000, *args, **kwargs):
+    def __init__(self, master, board, slices, pix_width=1300, pix_height=1000, *args, **kwargs):
+        Canvas.__init__(self, master, background='white', width=pix_width, height=pix_height, *args, **kwargs)
+        
         self.board = board
         self.slices = slices
         
+        self.pix_height = pix_height
+        self.pix_width  = pix_width
+
         # Compute all tile locations
         self.tile_loc_borders = self.get_tile_location_borders()
         self.loc_x_min = self.tile_loc_borders[0]
         self.loc_y_min = self.tile_loc_borders[1]
         self.loc_x_max = self.tile_loc_borders[2]
         self.loc_y_max = self.tile_loc_borders[3]
+        self.loc_x_diff = self.loc_x_max - self.loc_x_min
+        self.loc_y_diff = self.loc_y_max - self.loc_y_min
 
-        scale = min(pix_height / (self.loc_y_max - self.loc_y_min),
-                    pix_width / (self.loc_x_max - self.loc_x_min))
-        self.y_scale = scale                                # half hexagon height
-        self.x_scale = (scale**2 - (scale/2.0)**2)**0.5     # hexagon width
-        self.pix_height = pix_height
-        self.pix_width  = pix_width
-        
-        Canvas.__init__(self, master, background='white', width=self.pix_width, height=self.pix_height, *args, **kwargs)
 
+        if pix_height/self.loc_y_diff > pix_width/self.loc_x_diff:
+            edge_len = 2/3**0.5*pix_width/self.loc_x_diff
+        else:
+            edge_len = pix_height/self.loc_y_diff
+        self.y_scale = edge_len
+        self.x_scale = 3**0.5/2*edge_len
         
         self.hint_hexes = []
         self.selected_hex = None
@@ -43,8 +48,8 @@ class HexaGridCanvas(Canvas):
         for x in range(self.board.width):
             for y in range(self.board.height):
                 if not self.board.is_empty_tile(x, y):
-                    loc_x = (1 + 2*x + y)
-                    loc_y = (1 + 1.5*y)
+                    loc_x = 1 + 2*x + y
+                    loc_y = 1 + 1.5*y
                     all_loc_x.append(loc_x)
                     all_loc_y.append(loc_y)
         loc_x_min = min(all_loc_x) - margin
@@ -58,6 +63,11 @@ class HexaGridCanvas(Canvas):
     def get_hex_center_pix(self, x, y):
         pix_x = self.x_scale * ((1 + 2*x + y) - self.loc_x_min)
         pix_y = self.y_scale * ((1 + 1.5*y) - self.loc_y_min)
+        # Center the board in the frame
+        if self.pix_height/self.loc_y_diff > self.pix_width/self.loc_x_diff:
+            pix_y += self.y_scale * (3**0.5/2*self.loc_x_diff/self.pix_width*self.pix_height - self.loc_y_diff) / 2
+        else:
+            pix_x += self.x_scale * (2/3**0.5*self.loc_y_diff/self.pix_height*self.pix_width - self.loc_x_diff) / 2
         return pix_x, pix_y
 
 
@@ -160,10 +170,10 @@ class HexaSliceCanvas(Canvas):
         
         Canvas.__init__(self, master, background='white', width=self.pix_width, height=self.pix_height, *args, **kwargs)
         
-        self.edges = NUM_HEXA_EDGES * [None]
         self.selected_slice = None
-        self.set_tile(NUM_HEXA_EDGES * [TileEdge.GRASS])
+        self.edges = NUM_HEXA_EDGES * [None]
         self.select_slice(0)
+        self.set_tile(NUM_HEXA_EDGES * [TileEdge.GRASS])
 
 
     def get_tile(self):
@@ -223,6 +233,7 @@ class HexaSliceCanvas(Canvas):
     def set_tile(self, tile):
         for index, feature in enumerate(tile):
             self.set_edge(index, feature)
+        self.draw_slice(self.selected_slice, border_color=TileOutlineColors.SELECTED, fill_color=None)
 
 
     def set_connections(self, connections):

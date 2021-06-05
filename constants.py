@@ -140,5 +140,6 @@ def get_color_from_status(status):
 
 
 PARENT_DIR = os.path.dirname(__file__)
-MANUAL_SAVE_FILEPATH = os.path.join(PARENT_DIR, "manual.npz")
-AUTO_SAVE_FILEPATH = os.path.join(PARENT_DIR, "auto.npz")
+SAVE_DIR = os.path.join(PARENT_DIR, "saves/")
+MANUAL_SAVE_FILEPATH = os.path.join(SAVE_DIR, "manual.npz")
+AUTO_SAVE_FILEPATH = os.path.join(SAVE_DIR, "auto.npz")

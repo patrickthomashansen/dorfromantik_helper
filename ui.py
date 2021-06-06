@@ -400,8 +400,8 @@ class App(Tk):
         
         rotate_controls = []
         frame = self.control_frame
-        rotate_controls.append(Button(frame, text="Rotate CW",  command=lambda: tile_canvas.rotate(reverse=False)))
-        rotate_controls.append(Button(frame, text="Rotate CCW", command=lambda: tile_canvas.rotate(reverse=True)))
+        rotate_controls.append(Button(frame, text="Rotate CW",  command=lambda: self.tile_canvas.rotate(reverse=False)))
+        rotate_controls.append(Button(frame, text="Rotate CCW", command=lambda: self.tile_canvas.rotate(reverse=True)))
         for i, button in enumerate(rotate_controls):
             button.grid(row=i, column=2)
 
@@ -483,9 +483,9 @@ class App(Tk):
         hint = self.board_canvas.board.get_hint(tile, threshold=2, top_k=10)
         if not hint:
             hint = self.board_canvas.board.get_hint(tile, top_k=5)
-        text_hint = ["x={}, y={}, {} of {} good connections with {} perfects".format(
-                            x, y, num_good_connections, num_good_connections + num_bad_connections, num_perfects) \
-                            for (x, y, _), (_, num_perfects, num_good_connections, num_bad_connections) in hint]
+        text_hint = ["x={}, y={}, {} of {} good connections with {} perfects (score = {}), {}".format(
+                            x, y, evaluation['good'], evaluation['good'] + evaluation['bad'], evaluation['perfect'], evaluation['score']) \
+                            for (x, y, _), evaluation in hint]
         text_hint = "\n".join(text_hint)
         self.log.config(text=text_hint)
         self.board_canvas.set_hint(hint)

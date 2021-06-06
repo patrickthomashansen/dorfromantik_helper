@@ -227,19 +227,25 @@ class DorfBoard:
         num_meh_connections = 0
         neighbors = self.get_neighboring_tiles(x, y)
         for edge_index, (x_, y_) in enumerate(neighbors):
-            num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x_, y_)
-            is_good = self.is_good_connection(x, y, edge_index, tile)
-            if num_good_connections == 6-1 and is_good:
-                num_perfects += 1
-            elif num_bad_connections > 0 and not is_good:
-                num_meh_connections += 1
+            if not self.is_empty_tile(x_, y_):
+                num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x_, y_)
+                is_good = self.is_good_connection(x, y, edge_index, tile)
+                if num_good_connections == 6-1 and is_good:
+                    num_perfects += 1
+                elif num_bad_connections > 0 and not is_good:
+                    num_meh_connections += 1
         # Compute the number of good and bad connections
         num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x, y, tile)
         if num_good_connections == 6:
             num_perfects += 1
         # Give a proxy score
         score = 0.5*num_perfects + num_good_connections - (1.5*num_bad_connections - num_meh_connections)
-        return score, num_perfects, num_good_connections, num_bad_connections
+        evaluation = {'score': score,
+                      'perfect': num_perfects,
+                      'good': num_good_connections,
+                      'bad': num_bad_connections,
+                      'meh': num_meh_connections}
+        return evaluation
 
 
     def rank_all_placements(self, tile):
@@ -250,7 +256,7 @@ class DorfBoard:
             evaluation = self.evaluate_placement(x_, y_, tile_)
             if not evaluation == DorfBoardResult.ILLEGAL:
                 evaluations.append((placement, evaluation))
-        ranked_evaluations = sorted(evaluations, key=lambda x: x[1][0], reverse=True)
+        ranked_evaluations = sorted(evaluations, key=lambda x: x[1]['score'], reverse=True)
         return ranked_evaluations
 
 
@@ -258,7 +264,7 @@ class DorfBoard:
         ranked_evaluations = self.rank_all_placements(tile)
         num_evals = len(ranked_evaluations)
         if not threshold is None:
-            above_threshold = [score >= threshold for _, (score, _, _, _) in ranked_evaluations]
+            above_threshold = [evaluation['score'] >= threshold for _, evaluation in ranked_evaluations]
             num_evals = above_threshold.index(False)
         if not top_k is None:
             num_evals = min(top_k, num_evals)

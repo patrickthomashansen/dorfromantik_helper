@@ -412,7 +412,7 @@ class App(Tk):
 
 
     def manual_save(self):
-        self.grid.board.save(to_npz=MANUAL_SAVE_FILEPATH)
+        self.board_canvas.board.save(to_npz=MANUAL_SAVE_FILEPATH)
         self.log.config(text="Saved board state")
 
 
@@ -430,6 +430,8 @@ class App(Tk):
 
 
     def place_tile(self):
+        if self.board_canvas.selected_hex is None:
+            self.log.config(text="ERROR: no selected tile")
         x, y = self.board_canvas.selected_hex
         if self.board_canvas.board.status[x,y] != TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile placement at ({},{})".format(x, y))
@@ -460,7 +462,9 @@ class App(Tk):
         self.board_canvas.board.save(to_npz=AUTO_SAVE_FILEPATH)
         self.can_undo = True
         self.board_canvas.board.remove_tile(x, y)
+        self.board_canvas.selected_hex = None
         self.board_canvas.set_hint(None)
+        self.board_canvas.delete('all')
         self.board_canvas.draw_board()
         self.log.config(text="Removed tile at ({},{})".format(x, y))
 

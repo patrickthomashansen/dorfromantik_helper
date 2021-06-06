@@ -7,14 +7,14 @@ class DorfBoard:
 
     EDGE_ZERO_INDEX = 'left'
     DIRECTION = 'clockwise'
-    ORIGIN_TILE = NUM_HEXA_EDGES * [TileEdge.GRASS]
+    ORIGIN_TILE = 6 * [TileEdge.GRASS]
 
 
     def __init__(self, from_npz=None):
         
         if from_npz is None:
-            self.size = starting_size
-            self.edges = np.zeros([self.size, self.size, NUM_HEXA_EDGES], dtype=np.uint8)
+            self.size = 8
+            self.edges = np.zeros([self.size, self.size, 6], dtype=np.uint8)
             self.status = np.zeros([self.size, self.size], dtype=np.uint8)
             x, y = self.get_origin_xy()
             self.edges[x,y] = self.ORIGIN_TILE
@@ -50,7 +50,7 @@ class DorfBoard:
         new_size = self.size + 2*pad_size
         x0 = y0 = pad_size
         x1 = y1 = pad_size + self.size
-        new_edges =  np.zeros([new_size, new_size, NUM_HEXA_EDGES], dtype=np.uint8)
+        new_edges =  np.zeros([new_size, new_size, 6], dtype=np.uint8)
         new_status =  np.zeros([new_size, new_size], dtype=np.uint8)
         new_edges[x0:x1,y0:y1] = self.edges
         new_status[x0:x1,y0:y1] = self.status
@@ -71,7 +71,7 @@ class DorfBoard:
 
     def get_tile_rotations(self, tile):
         rotations = []
-        for i in range(NUM_HEXA_EDGES):
+        for i in range(6):
             rotations.append(tuple(tile[i:] + tile[:i]))
         rotations = list(set(rotations))
         rotations = [list(r) for r in rotations]
@@ -137,7 +137,7 @@ class DorfBoard:
         for (x,y) in valid_locations:
             for rotation in rotations:
                 is_legal = True
-                for edge_index in range(NUM_HEXA_EDGES):
+                for edge_index in range(6):
                     if not self.is_legal_connection(x, y, edge_index, rotation):
                         is_legal = False
                         break
@@ -148,7 +148,7 @@ class DorfBoard:
 
     def get_connecting_edges(self, x, y):
         connections = []
-        for edge_index in range(NUM_HEXA_EDGES):
+        for edge_index in range(6):
             x_, y_, opposite_edge_index = self.get_opposite_edge(x, y, edge_index)
             if self.is_in_grid(x_, y_) and not self.is_empty_tile(x_, y_):
                 connections.append(self.edges[x_,y_,opposite_edge_index])
@@ -179,7 +179,7 @@ class DorfBoard:
             return TileStatus.EMPTY
         else:
             num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x, y)
-            if num_good_connections == NUM_HEXA_EDGES:
+            if num_good_connections == 6:
                 return TileStatus.PERFECT
             elif num_bad_connections > 0:
                 return TileStatus.IMPERFECT
@@ -211,7 +211,7 @@ class DorfBoard:
         if not self.is_in_grid(x, y) or self.is_empty_tile(x, y):
             print("Illegal removal: ({},{}): ".format(x, y))
             return DorfBoardResult.ERROR
-        self.edges[x,y] = NUM_HEXA_EDGES * [TileEdge.EMPTY]
+        self.edges[x,y] = 6 * [TileEdge.EMPTY]
         self.status[x,y] = self.get_tile_status_from_connections(x, y)
         for x_, y_ in self.get_neighboring_tiles(x, y):
             self.update_tile_status(x_, y_)
@@ -219,7 +219,7 @@ class DorfBoard:
 
 
     def evaluate_placement(self, x, y, tile):
-        for edge_index in range(NUM_HEXA_EDGES):
+        for edge_index in range(6):
             if not self.is_legal_connection(x, y, edge_index, tile):
                 return DorfBoardResult.ILLEGAL
         # Compute the number of adjecent tiles that would become perfects
@@ -229,16 +229,16 @@ class DorfBoard:
         for edge_index, (x_, y_) in enumerate(neighbors):
             num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x_, y_)
             is_good = self.is_good_connection(x, y, edge_index, tile)
-            if num_good_connections == NUM_HEXA_EDGES-1 and is_good:
+            if num_good_connections == 6-1 and is_good:
                 num_perfects += 1
             elif num_bad_connections > 0 and not is_good:
                 num_meh_connections += 1
         # Compute the number of good and bad connections
         num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x, y, tile)
-        if num_good_connections == NUM_HEXA_EDGES:
+        if num_good_connections == 6:
             num_perfects += 1
         # Give a proxy score
-        score = 0.5*num_perfects + num_good_connections - 1.5*num_bad_connections + 0.5*num_meh_connections
+        score = 0.5*num_perfects + num_good_connections - (1.5*num_bad_connections - num_meh_connections)
         return score, num_perfects, num_good_connections, num_bad_connections
 
 
@@ -265,12 +265,14 @@ class DorfBoard:
         return ranked_evaluations[0:num_evals]
 
 
-    def get_num_tiles(self):
-        return np.count_nonzero((self.status != TileStatus.EMPTY) & (self.status != TileStatus.VALID))
-
-
-    def get_num_perfects(self):
-        return np.count_nonzero((self.status == TileStatus.PERFECT))
+    def get_num_tiles_with_status(self, status):
+        if isinstance(status, list):
+            match = np.zeros(shape=self.status.shape, dtype=bool)
+            for s in status:
+                match |= (self.status ==  s)
+        else:
+            match = (self.status == status)
+        return np.count_nonzero(match)
 
 
     def save(self, to_npz):

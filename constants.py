@@ -1,7 +1,5 @@
 import os
 
-NUM_HEXA_EDGES = 6
-
 class DorfBoardResult:
     OK = 0
     ENLARGE = -2

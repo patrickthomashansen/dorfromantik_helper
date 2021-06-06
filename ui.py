@@ -15,7 +15,6 @@ class HexaGridCanvas(Canvas):
         self.pix_height = pix_height
         self.pix_width  = pix_width
 
-        # Compute all tile locations
         self.tile_loc_borders = self.get_tile_location_borders()
         self.loc_x_min = self.tile_loc_borders[0]
         self.loc_y_min = self.tile_loc_borders[1]
@@ -35,9 +34,10 @@ class HexaGridCanvas(Canvas):
         self.hint_hexes = []
         self.selected_hex = None
         self.click_radius = self.x_scale * 0.95             # 5 percent margin of error on hex click
-        self.centers = np.zeros((board.height, board.width, 2))
-        for x in range(board.height):
-            for y in range(board.width):
+        # Compute all tile locations
+        self.centers = np.zeros((board.size, board.size, 2))
+        for x in range(board.size):
+            for y in range(board.size):
                 self.centers[x,y] = self.get_hex_center_pix(x, y)
 
 
@@ -45,8 +45,8 @@ class HexaGridCanvas(Canvas):
         # Give pixel offsets that attempt to center the board in the frame
         all_loc_x = []
         all_loc_y = []
-        for x in range(self.board.width):
-            for y in range(self.board.height):
+        for x in range(self.board.size):
+            for y in range(self.board.size):
                 if not self.board.is_empty_tile(x, y):
                     loc_x = 1 + 2*x + y
                     loc_y = 1 + 1.5*y
@@ -320,11 +320,10 @@ class HexaSliceCanvas(Canvas):
 
 
 class App(Tk):
-    def __init__(self, board=None, *args, **kwargs):
+    def __init__(self, from_npz=None, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
 
-        if not board:
-            board = DorfBoard()
+        board = DorfBoard(from_npz=from_npz)
 
         boardview_frame = Frame(self, background="#FFF0C1", bd=1, relief="sunken")
         tile_frame = Frame(self, background="#D2E2FB", bd=1, relief="sunken")
@@ -362,65 +361,51 @@ class App(Tk):
         grid.grid(row=0, column=0, padx=5, pady=5)
         grid.draw_board()
 
-        b_quit = Button(control_frame, text="Quit", command=self.correct_quit)
-        b_quit.grid(row=0, column=0)
+        grid_buttons = []
+        grid_buttons.append(Button(control_frame, text="Place", command=self.place_tile))
+        grid_buttons.append(Button(control_frame, text="Hint", command=self.display_hint))
+        grid_buttons.append(Button(control_frame, text="Sample", command=self.sample_tile))
+        grid_buttons.append(Button(control_frame, text="Remove", command=self.remove_tile))
+        grid_buttons.append(Button(control_frame, text="Undo", command=self.undo))
+        grid_buttons.append(Button(control_frame, text="Stats", command=self.display_stats))
+        grid_buttons.append(Button(control_frame, text="Save", command=self.manual_save))
+        grid_buttons.append(Button(control_frame, text="Quit", command=self.correct_quit))
+        for i, button in enumerate(grid_buttons):
+            button.grid(row=i, column=0)
 
-        b_place = Button(control_frame, text="Place", command=self.place_tile)
-        b_place.grid(row=1, column=0)
+        slices_buttons = []
+        slices_buttons.append(Button(control_frame, text="ALL", command=slices.select_all))
+        slices_buttons.append(Button(control_frame, text="Grass", command=lambda: slices.set_selected_edge(TileEdge.GRASS)))
+        slices_buttons.append(Button(control_frame, text="Trees", command=lambda: slices.set_selected_edge(TileEdge.TREES)))
+        slices_buttons.append(Button(control_frame, text="House", command=lambda: slices.set_selected_edge(TileEdge.HOUSE)))
+        slices_buttons.append(Button(control_frame, text="Crops", command=lambda: slices.set_selected_edge(TileEdge.CROPS)))
+        slices_buttons.append(Button(control_frame, text="River", command=lambda: slices.set_selected_edge(TileEdge.RIVER)))
+        slices_buttons.append(Button(control_frame, text="Train", command=lambda: slices.set_selected_edge(TileEdge.TRAIN)))
+        slices_buttons.append(Button(control_frame, text="Water", command=lambda: slices.set_selected_edge(TileEdge.WATER)))
+        slices_buttons.append(Button(control_frame, text="Station", command=lambda: slices.set_selected_edge(TileEdge.STATION)))
+        for i, button in enumerate(slices_buttons):
+            button.grid(row=i, column=1)
+        
+        rotate_buttons = []
+        rotate_buttons.append(Button(control_frame, text="Rotate CW", command=slices.rotate_clockwise))
+        rotate_buttons.append(Button(control_frame, text="Rotate CCW", command=slices.rotate_counterclockwise))
+        for i, button in enumerate(rotate_buttons):
+            button.grid(row=i, column=2)
 
-        b_hint = Button(control_frame, text="Hint", command=self.display_hint)
-        b_hint.grid(row=2, column=0)
-
-        b_save = Button(control_frame, text="Save", command=self.manual_save)
-        b_save.grid(row=3, column=0)
-
-        b_undo = Button(control_frame, text="Undo", command=self.undo)
-        b_undo.grid(row=4, column=0)
-
-        b_remove = Button(control_frame, text="Remove", command=self.remove_tile)
-        b_remove.grid(row=5, column=0)
-
-        b_sample = Button(control_frame, text="Sample", command=self.sample_tile)
-        b_sample.grid(row=6, column=0)
-
-        b_rotate_cw = Button(control_frame, text="Rotate CW", command=slices.rotate_clockwise)
-        b_rotate_ccw = Button(control_frame, text="Rotate CCW", command=slices.rotate_counterclockwise)
-        b_all = Button(control_frame, text="ALL", command=slices.select_all)
-        b_grass = Button(control_frame, text="Grass", command=lambda: slices.set_selected_edge(TileEdge.GRASS))
-        b_woods = Button(control_frame, text="Woods", command=lambda: slices.set_selected_edge(TileEdge.WOODS))
-        b_house = Button(control_frame, text="House", command=lambda: slices.set_selected_edge(TileEdge.HOUSE))
-        b_crops = Button(control_frame, text="Crops", command=lambda: slices.set_selected_edge(TileEdge.CROPS))
-        b_water = Button(control_frame, text="Water", command=lambda: slices.set_selected_edge(TileEdge.WATER))
-        b_river = Button(control_frame, text="River", command=lambda: slices.set_selected_edge(TileEdge.RIVER))
-        b_train = Button(control_frame, text="Train", command=lambda: slices.set_selected_edge(TileEdge.TRAIN))
-        b_station = Button(control_frame, text="Station", command=lambda: slices.set_selected_edge(TileEdge.STATION))
-        b_rotate_cw.grid(row=0, column=2)
-        b_rotate_ccw.grid(row=1, column=2)
-        b_all.grid(row=0, column=1)
-        b_grass.grid(row=1, column=1)
-        b_woods.grid(row=2, column=1)
-        b_house.grid(row=3, column=1)
-        b_crops.grid(row=4, column=1)
-        b_water.grid(row=5, column=1)
-        b_river.grid(row=6, column=1)
-        b_train.grid(row=7, column=1)
-        b_station.grid(row=8, column=1)
-
-        self.log = Label(textlog_frame, text="This is some text")
+        self.log = Label(textlog_frame, text="")
         self.log.pack()
 
         self.can_undo = False
 
 
     def manual_save(self):
-        self.grid.board.save()
+        self.grid.board.save(to_npz=MANUAL_SAVE_FILEPATH)
         self.log.config(text="Saved board state")
 
 
     def undo(self):
         if self.can_undo:
-            data = np.load(AUTO_SAVE_FILEPATH)
-            board = DorfBoard(edges=data['edges'], status=data['status'])
+            board = DorfBoard(from_npz=AUTO_SAVE_FILEPATH)
             self.grid = HexaGridCanvas(self.boardview_frame, board=board, slices=self.slices)
             self.grid.bind('<Button-1>', self.grid.on_click)
             self.grid.grid(row=0, column=0, padx=5, pady=5)
@@ -428,7 +413,7 @@ class App(Tk):
             self.log.config(text="Removed last placed tile")
             self.can_undo = False
         else:
-            self.log.config(text="Unable to undo move")
+            self.log.config(text="ERROR: Unable to undo move")
 
 
     def place_tile(self):
@@ -436,7 +421,7 @@ class App(Tk):
         if self.grid.board.status[x,y] != TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile placement at ({},{})".format(x, y))
             return
-        self.grid.board.save(auto=True)
+        self.grid.board.save(to_npz=AUTO_SAVE_FILEPATH)
         self.can_undo = True
         tile = self.slices.get_tile()
         self.grid.board.place_tile(x, y, tile)
@@ -445,6 +430,7 @@ class App(Tk):
             self.grid = HexaGridCanvas(self.boardview_frame, board=self.grid.board, slices=self.slices)
             self.grid.bind('<Button-1>', self.grid.on_click)
             self.grid.grid(row=0, column=0, padx=5, pady=5)
+        self.grid.selected_hex = None
         self.grid.set_hint(None)
         self.grid.draw_board()
         self.slices.set_tile(NUM_HEXA_EDGES * [TileEdge.GRASS])
@@ -460,9 +446,9 @@ class App(Tk):
         if self.grid.board.status[x,y] == TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile removal at ({},{})".format(x, y))
             return
-        self.grid.board.save(auto=True)
+        self.grid.board.save(to_npz=AUTO_SAVE_FILEPATH)
         self.can_undo = True
-        result = self.grid.board.remove_tile(x, y)
+        self.grid.board.remove_tile(x, y)
         self.grid.set_hint(None)
         self.grid.draw_board()
         self.log.config(text="Removed tile at ({},{})".format(x, y))
@@ -494,6 +480,13 @@ class App(Tk):
         self.grid.set_hint(hint)
         self.grid.draw_board()
 
+
+    def display_stats(self):
+        text = "{} tiles placed\n".format(self.grid.board.get_num_tiles() - 1)
+        text += "{} perfect tiles\n".format(self.grid.board.get_num_perfects())
+        self.log.config(text=text)
+
+
     def correct_quit(self):
         self.destroy()
         self.quit()
@@ -502,13 +495,11 @@ class App(Tk):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--load', '-l', action='store_true', help="Load data from last save")
+    parser.add_argument('--load', '-l', action='store_true', help="Load data from last manual save")
     args = parser.parse_args()
 
     if args.load:
-        data = np.load(MANUAL_SAVE_FILEPATH)
-        board = DorfBoard(edges=data['edges'], status=data['status'])
-        app = App(board=board)
+        app = App(from_npz=MANUAL_SAVE_FILEPATH)
     else:
         app = App()
 

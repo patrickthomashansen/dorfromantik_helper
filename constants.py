@@ -11,7 +11,7 @@ class DorfBoardResult:
 class TileEdge:
     EMPTY = 0
     GRASS = 1
-    WOODS = 2
+    TREES = 2
     HOUSE = 3
     CROPS = 4
     WATER = 5
@@ -21,19 +21,19 @@ class TileEdge:
 
 
 ILLEGAL_CONNECTIONS = [[TileEdge.RIVER, TileEdge.GRASS],
-                       [TileEdge.RIVER, TileEdge.WOODS],
+                       [TileEdge.RIVER, TileEdge.TREES],
                        [TileEdge.RIVER, TileEdge.HOUSE],
                        [TileEdge.RIVER, TileEdge.CROPS],
                        [TileEdge.RIVER, TileEdge.TRAIN],
                        [TileEdge.TRAIN, TileEdge.WATER],
                        [TileEdge.TRAIN, TileEdge.GRASS],
-                       [TileEdge.TRAIN, TileEdge.WOODS],
+                       [TileEdge.TRAIN, TileEdge.TREES],
                        [TileEdge.TRAIN, TileEdge.HOUSE],
                        [TileEdge.TRAIN, TileEdge.CROPS]]
 
 
 GOOD_CONNECTIONS = [[TileEdge.GRASS, TileEdge.GRASS],
-                    [TileEdge.WOODS, TileEdge.WOODS],
+                    [TileEdge.TREES, TileEdge.TREES],
                     [TileEdge.HOUSE, TileEdge.HOUSE],
                     [TileEdge.CROPS, TileEdge.CROPS],
                     [TileEdge.WATER, TileEdge.WATER],
@@ -58,7 +58,7 @@ class TileStatus:
 class TileFeatureColors:
     EMPTY = 'white'
     GRASS = 'lawn green'
-    WOODS = 'forest green'
+    TREES = 'forest green'
     HOUSE = 'red'
     CROPS = 'gold'
     WATER = 'blue'
@@ -70,7 +70,7 @@ class TileFeatureColors:
 class TileFeatureNames:
     EMPTY = "Empty"
     GRASS = "Grass"
-    WOODS = "Woods"
+    TREES = "TREES"
     HOUSE = "House"
     CROPS = "Crops"
     WATER = "Water"
@@ -97,7 +97,7 @@ class TileOutlineColors:
 def get_color_from_feature(feature):
     feature_to_color = {TileEdge.EMPTY:     TileFeatureColors.EMPTY,
                         TileEdge.GRASS:     TileFeatureColors.GRASS,
-                        TileEdge.WOODS:     TileFeatureColors.WOODS,
+                        TileEdge.TREES:     TileFeatureColors.TREES,
                         TileEdge.HOUSE:     TileFeatureColors.HOUSE,
                         TileEdge.CROPS:     TileFeatureColors.CROPS,
                         TileEdge.WATER:     TileFeatureColors.WATER,
@@ -113,7 +113,7 @@ def get_color_from_feature(feature):
 def get_name_from_feature(feature):
     feature_to_name = {TileEdge.EMPTY:     TileFeatureNames.EMPTY,
                        TileEdge.GRASS:     TileFeatureNames.GRASS,
-                       TileEdge.WOODS:     TileFeatureNames.WOODS,
+                       TileEdge.TREES:     TileFeatureNames.TREES,
                        TileEdge.HOUSE:     TileFeatureNames.HOUSE,
                        TileEdge.CROPS:     TileFeatureNames.CROPS,
                        TileEdge.WATER:     TileFeatureNames.WATER,

@@ -10,13 +10,9 @@ class DorfBoard:
     ORIGIN_TILE = NUM_HEXA_EDGES * [TileEdge.GRASS]
 
 
-    def __init__(self, starting_size=8, edges=None, status=None):
+    def __init__(self, from_npz=None):
         
-        if not edges is None and not status is None:
-            self.edges = edges
-            self.status = status
-            self.size = len(edges)
-        else:
+        if from_npz is None:
             self.size = starting_size
             self.edges = np.zeros([self.size, self.size, NUM_HEXA_EDGES], dtype=np.uint8)
             self.status = np.zeros([self.size, self.size], dtype=np.uint8)
@@ -25,8 +21,11 @@ class DorfBoard:
             self.status[x,y] = TileStatus.GOOD
             for x_, y_ in self.get_neighboring_tiles(x,y):
                 self.update_tile_status(x_, y_)
-        self.height = self.size
-        self.width = self.size
+        else:
+            data = np.load(from_npz)
+            self.edges = data['edges']
+            self.status = data['status']
+            self.size = len(self.edges)
 
 
     def get_origin_xy(self):
@@ -58,8 +57,6 @@ class DorfBoard:
         self.edges = new_edges
         self.status = new_status
         self.size = new_size
-        self.height = new_size
-        self.width = new_size
 
 
     def enlarge_and_relocate(self, x, y, pad_size=2):
@@ -268,12 +265,16 @@ class DorfBoard:
         return ranked_evaluations[0:num_evals]
 
 
-    def save(self, auto=False):
-        if auto:
-            fpath = AUTO_SAVE_FILEPATH
-        else:
-            fpath = MANUAL_SAVE_FILEPATH
-        np.savez(fpath, edges=self.edges, status=self.status)
+    def get_num_tiles(self):
+        return np.count_nonzero((self.status != TileStatus.EMPTY) & (self.status != TileStatus.VALID))
+
+
+    def get_num_perfects(self):
+        return np.count_nonzero((self.status == TileStatus.PERFECT))
+
+
+    def save(self, to_npz):
+        np.savez(to_npz, edges=self.edges, status=self.status)
 
 
 

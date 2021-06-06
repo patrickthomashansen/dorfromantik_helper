@@ -483,7 +483,7 @@ class App(Tk):
         hint = self.board_canvas.board.get_hint(tile, threshold=2, top_k=10)
         if not hint:
             hint = self.board_canvas.board.get_hint(tile, top_k=5)
-        text_hint = ["x={}, y={}, {} of {} good connections with {} perfects (score = {}), {}".format(
+        text_hint = ["x={}, y={}, {} of {} good connections with {} perfects (score = {})".format(
                             x, y, evaluation['good'], evaluation['good'] + evaluation['bad'], evaluation['perfect'], evaluation['score']) \
                             for (x, y, _), evaluation in hint]
         text_hint = "\n".join(text_hint)

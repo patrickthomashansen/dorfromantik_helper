@@ -186,7 +186,6 @@ class DorfBoardCanvas(Canvas):
             self.hint_hexes.append((x,y))
 
 
-
 class HexTileCanvas(Canvas):
     def __init__(self, master, scale, *args, **kwargs):
         self.x_scale = (scale**2 - (scale/2.0)**2)**0.5     # hexagon width
@@ -336,7 +335,6 @@ class HexTileCanvas(Canvas):
         print("Selected slice: ", index)
         if index == None:
             return
-
         # Highlight newly selected tile if valid
         self.select_slice(index)
 

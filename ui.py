@@ -270,20 +270,17 @@ class HexaSliceCanvas(Canvas):
                 self.select_slice((self.selected_slice+1)%NUM_HEXA_EDGES)
 
 
-    def rotate_clockwise(self):
-        new_edges = self.edges[5:] + self.edges[:5]
+    def rotate(self, reverse=False):
+        if reverse:
+            new_edges = self.edges[1:] + self.edges[:1]
+            new_selected_slice = (self.selected_slice - 1) % NUM_HEXA_EDGES
+        else:
+            new_edges = self.edges[5:] + self.edges[:5]
+            new_selected_slice = (self.selected_slice + 1) % NUM_HEXA_EDGES
         for index, feature in enumerate(new_edges):
             self.set_edge(index, feature)
         if self.selected_slice != -1:
-            self.select_slice((self.selected_slice+1)%NUM_HEXA_EDGES)
-
-
-    def rotate_counterclockwise(self):
-        new_edges = self.edges[1:] + self.edges[:1]
-        for index, feature in enumerate(new_edges):
-            self.set_edge(index, feature)
-        if self.selected_slice != -1:
-            self.select_slice((self.selected_slice-1)%NUM_HEXA_EDGES)
+            self.select_slice(new_selected_slice)
 
 
     @staticmethod
@@ -320,36 +317,26 @@ class HexaSliceCanvas(Canvas):
 
 
 class App(Tk):
-    def __init__(self, from_npz=None, *args, **kwargs):
+    def __init__(self, from_npz, height, width *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
 
         board = DorfBoard(from_npz=from_npz)
 
-        boardview_frame = Frame(self, background="#FFF0C1", bd=1, relief="sunken")
-        tile_frame = Frame(self, background="#D2E2FB", bd=1, relief="sunken")
-        control_frame = Frame(self, background="#CCE4CA", bd=1, relief="sunken")
-        textlog_frame = Frame(self, background="#F5C2C1", bd=1, relief="sunken")
-        
-        self.boardview_frame = boardview_frame
-        self.tile_frame = tile_frame
-        self.control_frame = control_frame
-        self.textlog_frame = textlog_frame
+        self.boardview_frame = Frame(self, background="#FFF0C1", bd=1, relief="sunken")
+        self.tile_frame = Frame(self, background="#D2E2FB", bd=1, relief="sunken")
+        self.control_frame = Frame(self, background="#CCE4CA", bd=1, relief="sunken")
+        self.textlog_frame = Frame(self, background="#F5C2C1", bd=1, relief="sunken")
 
-        boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
-        tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
-        control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
-        textlog_frame.grid(row=1, column=2, rowspan=1, sticky="nsew", padx=2, pady=2)
-
-        # boardview_frame.pack(side="left", fill=None, expand=False)
-        # tile_frame.pack(side="left", fill=None, expand=False)
-        # control_frame.pack(side="left", fill=None, expand=False)
-        # textlog_frame.pack(side="right", fill=None, expand=False)
+        self.boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
+        self.tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
+        self.control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
+        self.textlog_frame.grid(row=1, column=2, rowspan=1, sticky="nsew", padx=2, pady=2)
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.columnconfigure(2, weight=100000)
 
-        slices = HexaSliceCanvas(tile_frame, scale=100)
+        slices = HexaSliceCanvas(self.tile_frame, scale=100)
         self.slices = slices
         slices.bind('<Button-1>', slices.on_click)
         slices.grid(row=0, column=0, padx=5, pady=5)
@@ -362,33 +349,36 @@ class App(Tk):
         grid.draw_board()
 
         grid_buttons = []
-        grid_buttons.append(Button(control_frame, text="Place", command=self.place_tile))
-        grid_buttons.append(Button(control_frame, text="Hint", command=self.display_hint))
-        grid_buttons.append(Button(control_frame, text="Sample", command=self.sample_tile))
-        grid_buttons.append(Button(control_frame, text="Remove", command=self.remove_tile))
-        grid_buttons.append(Button(control_frame, text="Undo", command=self.undo))
-        grid_buttons.append(Button(control_frame, text="Stats", command=self.display_stats))
-        grid_buttons.append(Button(control_frame, text="Save", command=self.manual_save))
-        grid_buttons.append(Button(control_frame, text="Quit", command=self.correct_quit))
+        f = self. control_frame
+        grid_buttons.append(Button(f, text="Place",  command=self.place_tile))
+        grid_buttons.append(Button(f, text="Hint",   command=self.display_hint))
+        grid_buttons.append(Button(f, text="Sample", command=self.sample_tile))
+        grid_buttons.append(Button(f, text="Remove", command=self.remove_tile))
+        grid_buttons.append(Button(f, text="Undo",   command=self.undo))
+        grid_buttons.append(Button(f, text="Stats",  command=self.display_stats))
+        grid_buttons.append(Button(f, text="Save",   command=self.manual_save))
+        grid_buttons.append(Button(f, text="Quit",   command=self.correct_quit))
         for i, button in enumerate(grid_buttons):
             button.grid(row=i, column=0)
 
         slices_buttons = []
-        slices_buttons.append(Button(control_frame, text="ALL", command=slices.select_all))
-        slices_buttons.append(Button(control_frame, text="Grass", command=lambda: slices.set_selected_edge(TileEdge.GRASS)))
-        slices_buttons.append(Button(control_frame, text="Trees", command=lambda: slices.set_selected_edge(TileEdge.TREES)))
-        slices_buttons.append(Button(control_frame, text="House", command=lambda: slices.set_selected_edge(TileEdge.HOUSE)))
-        slices_buttons.append(Button(control_frame, text="Crops", command=lambda: slices.set_selected_edge(TileEdge.CROPS)))
-        slices_buttons.append(Button(control_frame, text="River", command=lambda: slices.set_selected_edge(TileEdge.RIVER)))
-        slices_buttons.append(Button(control_frame, text="Train", command=lambda: slices.set_selected_edge(TileEdge.TRAIN)))
-        slices_buttons.append(Button(control_frame, text="Water", command=lambda: slices.set_selected_edge(TileEdge.WATER)))
-        slices_buttons.append(Button(control_frame, text="Station", command=lambda: slices.set_selected_edge(TileEdge.STATION)))
+        f = self.control_frame
+        slices_buttons.append(Button(f, text="ALL", command=slices.select_all))
+        slices_buttons.append(Button(f, text="Grass",   command=lambda: slices.set_selected_edge(TileEdge.GRASS)))
+        slices_buttons.append(Button(f, text="Trees",   command=lambda: slices.set_selected_edge(TileEdge.TREES)))
+        slices_buttons.append(Button(f, text="House",   command=lambda: slices.set_selected_edge(TileEdge.HOUSE)))
+        slices_buttons.append(Button(f, text="Crops",   command=lambda: slices.set_selected_edge(TileEdge.CROPS)))
+        slices_buttons.append(Button(f, text="River",   command=lambda: slices.set_selected_edge(TileEdge.RIVER)))
+        slices_buttons.append(Button(f, text="Train",   command=lambda: slices.set_selected_edge(TileEdge.TRAIN)))
+        slices_buttons.append(Button(f, text="Water",   command=lambda: slices.set_selected_edge(TileEdge.WATER)))
+        slices_buttons.append(Button(f, text="Station", command=lambda: slices.set_selected_edge(TileEdge.STATION)))
         for i, button in enumerate(slices_buttons):
             button.grid(row=i, column=1)
         
         rotate_buttons = []
-        rotate_buttons.append(Button(control_frame, text="Rotate CW", command=slices.rotate_clockwise))
-        rotate_buttons.append(Button(control_frame, text="Rotate CCW", command=slices.rotate_counterclockwise))
+        f = self.control_frame
+        rotate_buttons.append(Button(f, text="Rotate CW",  command=lambda: slices.rotate(reverse=False)))
+        rotate_buttons.append(Button(f, text="Rotate CCW", command=lambda: slices.rotate(reverse=True)))
         for i, button in enumerate(rotate_buttons):
             button.grid(row=i, column=2)
 
@@ -496,11 +486,11 @@ class App(Tk):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--load', '-l', action='store_true', help="Load data from last manual save")
+    parser.add_argument('--height', '-h', type=int, help="Pixel height of the hex grid display")
+    parser.add_argument('--width', '-w', type=int, help="Pixel width of the hex grid display")
     args = parser.parse_args()
 
-    if args.load:
-        app = App(from_npz=MANUAL_SAVE_FILEPATH)
-    else:
-        app = App()
+    from_npz = MANUAL_SAVE_FILEPATH if args.load else None
 
+    app = App(from_npz=from_npz, height=args.height, width=args.width)
     app.mainloop()

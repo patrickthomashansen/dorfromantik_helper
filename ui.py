@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from tkinter import *
 from board import *
@@ -517,6 +518,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     from_npz = MANUAL_SAVE_FILEPATH if args.load else None
+    if not os.path.exists(SAVE_DIR):
+        os.mkdir(SAVE_DIR)
 
     app = App(from_npz=from_npz, pix_height=args.height, pix_width=args.width)
     app.mainloop()

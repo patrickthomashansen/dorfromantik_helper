@@ -188,7 +188,8 @@ class DorfBoardCanvas(Canvas):
 
 
 class HexTileCanvas(Canvas):
-    def __init__(self, master, scale, *args, **kwargs):
+    def __init__(self, master, size, *args, **kwargs):
+        scale = size / 3
         self.x_scale = (scale**2 - (scale/2.0)**2)**0.5     # hexagon width
         self.y_scale = scale                                # half hexagon height
         self.pix_height = 3 * self.y_scale
@@ -342,8 +343,11 @@ class HexTileCanvas(Canvas):
 
 
 class App(Tk):
-    def __init__(self, from_npz, pix_height, pix_width, *args, **kwargs):
+    def __init__(self, from_npz, pix_height, pix_width, layout, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
+
+        self.pix_height = pix_height
+        self.pix_width = pix_width
 
         board = DorfBoard(from_npz=from_npz)
 
@@ -352,21 +356,30 @@ class App(Tk):
         self.control_frame = Frame(self, background="#CCE4CA", bd=1, relief="sunken")
         self.textlog_frame = Frame(self, background="#F5C2C1", bd=1, relief="sunken")
 
-        self.boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
-        self.tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
-        self.control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
-        self.textlog_frame.grid(row=1, column=2, rowspan=1, sticky="nsew", padx=2, pady=2)
+        if layout == 0:
+            self.boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
+            self.tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
+            self.control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
+            self.textlog_frame.grid(row=1, column=2, rowspan=1, sticky="nsew", padx=2, pady=2)
+            self.columnconfigure(2, minsize=500)
+        elif layout == 1:
+            self.boardview_frame.grid(row=0, column=1, rowspan=3, sticky="nsew", padx=2, pady=2)
+            self.tile_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+            self.control_frame.grid(row=1, column=0, rowspan=1, sticky="nsew", padx=2, pady=2)
+            self.textlog_frame.grid(row=2, column=0, rowspan=1, sticky="nsew", padx=2, pady=2)
+            self.columnconfigure(0, minsize=500)
+            self.rowconfigure(2, minsize=200)
 
-        self.columnconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
-        self.columnconfigure(2, weight=100000)
-
-        self.tile_canvas = HexTileCanvas(self.tile_frame, scale=100)
+        self.tile_canvas = HexTileCanvas(self.tile_frame, size=300)
         self.tile_canvas.bind('<Button-1>', self.tile_canvas.on_click)
         self.tile_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.tile_canvas.grid(row=0, column=0)
 
-        self.board_canvas = DorfBoardCanvas(self.boardview_frame, board=board, tile_canvas=self.tile_canvas)
+        self.board_canvas = DorfBoardCanvas(self.boardview_frame,
+                                            board=board,
+                                            tile_canvas=self.tile_canvas,
+                                            pix_width=self.pix_width,
+                                            pix_height=self.pix_height)
         self.board_canvas.bind('<Button-1>', self.board_canvas.on_click)
         self.board_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.board_canvas.draw_board()
@@ -420,7 +433,11 @@ class App(Tk):
     def undo(self):
         if self.can_undo:
             board = DorfBoard(from_npz=AUTO_SAVE_FILEPATH)
-            self.board_canvas = DorfBoardCanvas(self.boardview_frame, board=board, tile_canvas=self.tile_canvas)
+            self.board_canvas = DorfBoardCanvas(self.boardview_frame,
+                                                board=board,
+                                                tile_canvas=self.tile_canvas,
+                                                pix_width=self.pix_width,
+                                                pix_height=self.pix_height)
             self.board_canvas.bind('<Button-1>', self.board_canvas.on_click)
             self.board_canvas.grid(row=0, column=0, padx=5, pady=5)
             self.board_canvas.draw_board()
@@ -515,11 +532,14 @@ if __name__ == '__main__':
     parser.add_argument('--load', '-l', action='store_true', help="Load data from last manual save")
     parser.add_argument('--height', '-y', type=int, help="Pixel height of the board display")
     parser.add_argument('--width', '-x', type=int, help="Pixel width of the board display")
+    parser.add_argument('--layout', type=int, default=0, help="Layout of the widgets in the window")
     args = parser.parse_args()
+
+    assert(args.layout in [0, 1])
 
     from_npz = MANUAL_SAVE_FILEPATH if args.load else None
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
 
-    app = App(from_npz=from_npz, pix_height=args.height, pix_width=args.width)
+    app = App(from_npz=from_npz, pix_height=args.height, pix_width=args.width, layout=args.layout)
     app.mainloop()

@@ -1,57 +1,97 @@
-from collections import namedtuple
 import numpy as np
+import os
+
+
+from tile import Tile
 from constants import *
 
 
 class DorfBoard:
+    """
+    A class representing the board state of a Dorfromantik game
+    """
 
-    EDGE_ZERO_INDEX = 'left'
-    DIRECTION = 'clockwise'
-    ORIGIN_TILE = 6 * [TileEdge.GRASS]
-
-
-    def __init__(self, from_npz=None):
-        
-        if from_npz is None:
-            self.size = 8
-            self.edges = np.zeros([self.size, self.size, 6], dtype=np.uint8)
-            self.status = np.zeros([self.size, self.size], dtype=np.uint8)
-            x, y = self.get_origin_xy()
-            self.edges[x,y] = self.ORIGIN_TILE
-            self.status[x,y] = TileStatus.GOOD
-            for x_, y_ in self.get_neighboring_tiles(x,y):
-                self.update_tile_status(x_, y_)
+    def __init__(self, save_file:str=None):
+        """Loads a save file or initializes a new game board"""
+        if save_file is None:
+            self.initialize_new_board()
         else:
-            data = np.load(from_npz)
-            self.edges = data['edges']
-            self.status = data['status']
-            self.size = len(self.edges)
+            self.load_board(save_file)
 
 
-    def get_origin_xy(self):
+    @staticmethod
+    def get_empty_edges(size:int) -> np.array:
+        """Return an array representing edges of an empty board of a given size"""
+        return np.ones([size, size, 6], dtype=np.uint8) * TileEdge.EMPTY
+
+
+    @staticmethod
+    def get_empty_status(size:int) -> np.array:
+        """Return an array representing status of each tile of an empty board of a given size"""
+        return np.ones([size, size], dtype=np.uint8) * TileStatus.EMPTY
+
+
+    def initialize_new_board(self) -> None:
+        """Creates a game board with only the origin tile"""
+        # Create a board with empty tiles
+        self.size = 8
+        self.edges = self.get_empty_edges(self.size)
+        self.status = self.get_empty_status(self.size)
+        # Place the origin tile and update neighbors
+        xy = self.get_origin_xy()
+        self.edges[xy] = ORIGIN_TILE
+        self.status[xy] = TileStatus.GOOD
+        for xy_ in self.get_neighboring_tile_xys(xy):
+            self.update_tile_status(xy_)
+
+
+    def load_board(self, save_file:str) -> None:
+        """Loads a game board from a npz save file"""
+        assert os.path.exists(save_file)
+        data = np.load(save_file)
+        self.edges = data['edges']
+        self.status = data['status']
+        self.size = len(self.edges)
+
+
+    def save_board(self, save_file:str) -> None:
+        """Saves a game board to a npz save file"""
+        np.savez(save_file, edges=self.edges, status=self.status)
+
+
+    def get_origin_xy(self) -> tuple:
+        """Returns the (x,y) coordinates of the origin tile"""
         return int(self.size/2 - 1), int(self.size/2 - 1)
 
 
-    def is_in_grid(self, x, y):
+    def is_in_grid(self, xy:tuple) -> bool:
+        """Checks if the given coordinates lay within the bounds of the board"""
+        x, y = xy
         return x >= 0 and y >= 0 and x < self.size and y < self.size
 
 
-    def is_on_border(self, x, y):
+    def is_on_border(self, xy:tuple) -> bool:
+        """Checks if the given coordinates lay on the border of the game board"""
+        x, y = xy
         return x == 0 or y == 0 or x == self.size-1 or y == self.size-1
 
 
-    def is_near_border(self, x, y, distance=1):
-        if not self.is_in_grid(x, y):
+    def is_near_border(self, xy:tuple, distance_threshold:int=1) -> bool:
+        """Checks if the given coordinates lay within some distance of the border of the game board"""
+        if not self.is_in_grid(xy):
             return DorfBoardResult.ERROR
-        return x <= distance or y <= distance or x >= self.size-1-distance or y >= self.size-1-distance
+        x, y = xy
+        k = distance_threshold
+        return x <= k or y <= k or x >= self.size-1-k or y >= self.size-1-k
 
 
-    def enlarge(self, pad_size=2):
+    def enlarge_board(self, pad_size:int=2) -> None:
+        """Enlarges the game board by padding the existing board with empty tiles"""
         new_size = self.size + 2*pad_size
+        new_edges = self.get_empty_edges(new_size)
+        new_status = self.get_empty_status(new_size)
         x0 = y0 = pad_size
         x1 = y1 = pad_size + self.size
-        new_edges =  np.zeros([new_size, new_size, 6], dtype=np.uint8)
-        new_status =  np.zeros([new_size, new_size], dtype=np.uint8)
         new_edges[x0:x1,y0:y1] = self.edges
         new_status[x0:x1,y0:y1] = self.status
         self.edges = new_edges
@@ -59,126 +99,128 @@ class DorfBoard:
         self.size = new_size
 
 
-    def enlarge_and_relocate(self, x, y, pad_size=2):
-        self.enlarge(pad_size)
+    def enlarge_and_relocate(self, xy:tuple, pad_size:int=2) -> tuple:
+        """Enlarges the game board and returns the new loacation of the given coordinates"""
+        self.enlarge_board(pad_size)
+        x, y = xy
         return x+pad_size, y+pad_size
 
 
+    def get_edge(self, xy:tuple, edge_index:int) -> int:
+        """Returns the edge at the given location"""
+        x, y = xy
+        return self.edges[x,y,edge_index]
+
+
     @staticmethod
-    def get_neighboring_tiles(x, y):
+    def get_neighboring_tile_xys(xy:tuple) -> list:
+        """Returns a list of coordinates of all possible neighbors of a tile"""
+        x, y = xy
         return [(x-1,y), (x,y-1), (x+1,y-1), (x+1,y), (x,y+1), (x-1,y+1)]
 
 
-    def get_tile_rotations(self, tile):
-        rotations = []
-        for i in range(6):
-            rotations.append(tuple(tile[i:] + tile[:i]))
-        rotations = list(set(rotations))
-        rotations = [list(r) for r in rotations]
-        return rotations
+    def is_empty_tile(self, xy:tuple) -> bool:
+        """Checks if the given tile location is empty"""
+        return (self.edges[xy] == TileEdge.EMPTY).all()
 
 
-    def is_empty_tile(self, x, y):
-        return (self.edges[x, y] == TileEdge.EMPTY).all()
-
-
-    def get_opposite_edge(self, x, y, edge_index):
+    def get_opposite_edge_location(self, xy:tuple, edge_index:int) -> tuple:
+        """Returns the tile location and edge index of the opposing edge"""
+        x, y = xy
         if edge_index == 0:
-            return x-1, y, 3
+            return (x-1, y), 3
         elif edge_index == 1:
-            return x, y-1, 4
+            return (x, y-1), 4
         elif edge_index == 2:
-            return x+1, y-1, 5
+            return (x+1, y-1), 5
         elif edge_index == 3:
-            return x+1, y, 0
+            return (x+1, y), 0
         elif edge_index == 4:
-            return x, y+1, 1
+            return (x, y+1), 1
         elif edge_index == 5:
-            return x-1, y+1, 2
+            return (x-1, y+1), 2
 
 
-    def is_legal_connection(self, x, y, edge_index, tile):
-        edge1 = tile[edge_index]
-        x_, y_, edge_index_ = self.get_opposite_edge(x, y, edge_index)
-        if not self.is_in_grid(x_, y_):
+    def is_legal_connection(self, xy:tuple, edge_index:int, tile:Tile) -> bool:
+        """Checks if the connection along one edge would be legal if the tile is placed"""
+        edge1 = tile.edges[edge_index]
+        xy_, edge_index_ = self.get_opposite_edge_location(xy, edge_index)
+        if not self.is_in_grid(xy_):
             return True
-        edge2 = self.edges[x_,y_,edge_index_]
-        if [edge1, edge2] in ILLEGAL_CONNECTIONS:
-            return False
-        elif [edge2, edge1] in ILLEGAL_CONNECTIONS:
-            return False
-        else:
-            return True
+        edge2 = self.get_edge(xy_, edge_index_)
+        return not (edge1, edge2) in ILLEGAL_CONNECTIONS and not (edge2, edge1) in ILLEGAL_CONNECTIONS
 
     
-    def is_good_connection(self, x, y, edge_index, tile=None):
-        if tile is None:
-            tile = self.edges[x,y]
-        if not self.is_legal_connection(x, y, edge_index, tile):
+    def is_good_connection(self, xy:tuple, edge_index:int, tile:Tile) -> bool:
+        """Checks if the connection along one edge would be good if the tile is placed"""
+        if not self.is_legal_connection(xy, edge_index, tile):
             return False
-        edge1 = tile[edge_index]
-        x_, y_, edge_index_ = self.get_opposite_edge(x, y, edge_index)
-        edge2 = self.edges[x_,y_,edge_index_]
-        if [edge1, edge2] in GOOD_CONNECTIONS:
-            return True
-        elif [edge2, edge1] in GOOD_CONNECTIONS:
-            return True
-        else:
-            return False
+        edge1 = tile.edges[edge_index]
+        xy_, edge_index_ = self.get_opposite_edge_location(xy, edge_index)
+        edge2 = self.get_edge(xy_, edge_index_)
+        return (edge1, edge2) in GOOD_CONNECTIONS or (edge2, edge1) in GOOD_CONNECTIONS
 
-    def get_valid_locations(self, tile):
+
+    def get_valid_locations(self) -> list:
+        """Returns a list of all valid tile locations"""
         return zip(*np.where(self.status==TileStatus.VALID))
 
 
-    def get_legal_placements(self, tile):
-        rotations = self.get_tile_rotations(tile)
-        valid_locations = self.get_valid_locations(tile)
+    def is_legal_placement(self, xy:tuple, tile:Tile) -> bool:
+        """Checks if the given tile placement is legal"""
+        for edge_index in range(6):
+            if not self.is_legal_connection(xy, edge_index, tile):
+                return False
+        return True
+
+    def get_legal_placements(self, tile:Tile) -> list:
+        """Returns a list of all legal placements of a tile"""
+        rotations = tile.get_rotations()
+        valid_locations = self.get_valid_locations()
         legal_placements = []
-        for (x,y) in valid_locations:
+        for xy in valid_locations:
             for rotation in rotations:
-                is_legal = True
-                for edge_index in range(6):
-                    if not self.is_legal_connection(x, y, edge_index, rotation):
-                        is_legal = False
-                        break
-                if is_legal:
-                    legal_placements.append([x, y, rotation])
+                if self.is_legal_placement(xy, rotation):
+                    legal_placements.append([xy, rotation])
         return legal_placements
 
 
-    def get_connecting_edges(self, x, y):
+    def get_connecting_edges(self, xy:tuple) -> Tile:
+        """Returns a tile representing all opposite edges given a location"""
         connections = []
         for edge_index in range(6):
-            x_, y_, opposite_edge_index = self.get_opposite_edge(x, y, edge_index)
-            if self.is_in_grid(x_, y_) and not self.is_empty_tile(x_, y_):
-                connections.append(self.edges[x_,y_,opposite_edge_index])
+            xy_, opposite_edge_index = self.get_opposite_edge_location(xy, edge_index)
+            if self.is_in_grid(xy_) and not self.is_empty_tile(xy_):
+                connections.append(self.get_edge(xy_, opposite_edge_index))
             else:
                 connections.append(TileEdge.EMPTY)
-        return connections
+        return Tile(connections)
 
 
-    def get_num_good_and_bad_connections(self, x, y, tile=None):
+    def get_num_good_and_bad_connections(self, xy:tuple, tile:Tile=None) -> tuple:
+        """Returns the number of good and bad connections a tile has or will have if it is placed"""
         if tile is None:
-            tile = self.edges[x,y]
-        neighbors = self.get_neighboring_tiles(x, y)
+            tile = Tile(list(self.edges[xy]))    # Use existing edges
+        neighbors = self.get_neighboring_tile_xys(xy)
         num_good_connections = num_bad_connections = 0
-        for edge_index, (x_, y_) in enumerate(neighbors):
-            if self.is_in_grid(x_, y_) and not self.is_empty_tile(x_, y_):
-                if self.is_good_connection(x, y, edge_index, tile):
+        for edge_index, xy_ in enumerate(neighbors):
+            if self.is_in_grid(xy_) and not self.is_empty_tile(xy_):
+                if self.is_good_connection(xy, edge_index, tile):
                     num_good_connections += 1
                 else:
                     num_bad_connections += 1
         return num_good_connections, num_bad_connections
 
 
-    def get_tile_status_from_connections(self, x, y):
-        if self.is_empty_tile(x, y):
-            for x_, y_ in self.get_neighboring_tiles(x, y):
-                if self.is_in_grid(x_, y_) and not self.is_empty_tile(x_, y_):
+    def get_status_from_connections(self, xy:tuple) -> int:
+        """Returns the status of a tile location from the connections with its neighbors"""
+        if self.is_empty_tile(xy):
+            for xy_ in self.get_neighboring_tile_xys(xy):
+                if self.is_in_grid(xy_) and not self.is_empty_tile(xy_):
                         return TileStatus.VALID
             return TileStatus.EMPTY
         else:
-            num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x, y)
+            num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(xy)
             if num_good_connections == 6:
                 return TileStatus.PERFECT
             elif num_bad_connections > 0:
@@ -187,55 +229,56 @@ class DorfBoard:
                 return TileStatus.GOOD
 
 
-    def update_tile_status(self, x, y):
-        self.status[x,y] = self.get_tile_status_from_connections(x, y)
+    def update_tile_status(self, xy:tuple) -> None:
+        """Updates the status of a tile location"""
+        self.status[xy] = self.get_status_from_connections(xy)
 
 
-    def place_tile(self, x, y, tile):
-        if not self.is_in_grid(x, y) or [x, y, tile] not in self.get_legal_placements(tile):
-            print("Illegal placement: ({},{}): ".format(x, y), tile)
+    def place_tile(self, xy:tuple, tile:Tile) -> int:
+        """Attempts to place a tile at a given location"""
+        if not self.is_in_grid(xy) or [xy, tile] not in self.get_legal_placements(tile):
+            print("Illegal placement: {}: ".format(xy), tile)
             return DorfBoardResult.ERROR
-        if self.is_near_border(x, y, distance=1):
-            x, y = self.enlarge_and_relocate(x, y)
-            result = DorfBoardResult.ENLARGE
-        else:
-            result = DorfBoardResult.OK
-        self.edges[x,y] = tile
-        self.status[x,y] = self.get_tile_status_from_connections(x, y)
-        for x_, y_ in self.get_neighboring_tiles(x, y):
-            self.update_tile_status(x_, y_)
-        return result
-
-
-    def remove_tile(self, x, y):
-        if not self.is_in_grid(x, y) or self.is_empty_tile(x, y):
-            print("Illegal removal: ({},{}): ".format(x, y))
-            return DorfBoardResult.ERROR
-        self.edges[x,y] = 6 * [TileEdge.EMPTY]
-        self.status[x,y] = self.get_tile_status_from_connections(x, y)
-        for x_, y_ in self.get_neighboring_tiles(x, y):
-            self.update_tile_status(x_, y_)
+        if self.is_near_border(xy, distance_threshold=1):
+            xy = self.enlarge_and_relocate(xy)
+        self.edges[xy] = tile.edges
+        self.status[xy] = self.get_status_from_connections(xy)
+        for xy_ in self.get_neighboring_tile_xys(xy):
+            self.update_tile_status(xy_)
         return DorfBoardResult.OK
 
 
-    def evaluate_placement(self, x, y, tile):
+    def remove_tile(self, xy:tuple) -> int:
+        """Attempts to remove a tile from a given location"""
+        if not self.is_in_grid(xy) or self.is_empty_tile(xy):
+            print("Illegal removal: {}: ".format(xy))
+            return DorfBoardResult.ERROR
+        self.edges[xy] = 6 * [TileEdge.EMPTY]
+        self.status[xy] = self.get_status_from_connections(xy)
+        for xy_ in self.get_neighboring_tile_xys(xy):
+            self.update_tile_status(xy_)
+        return DorfBoardResult.OK
+
+
+    def evaluate_placement(self, xy:tuple, tile:Tile) -> dict:
+        """Evaluates how well a tile fits in a given location"""
         for edge_index in range(6):
-            if not self.is_legal_connection(x, y, edge_index, tile):
+            if not self.is_legal_connection(xy, edge_index, tile):
                 return DorfBoardResult.ILLEGAL
         # Compute the number of adjecent tiles that would become perfects
         num_perfects = 0
         num_meh_connections = 0
-        neighbors = self.get_neighboring_tiles(x, y)
-        for edge_index, (x_, y_) in enumerate(neighbors):
-            if not self.is_empty_tile(x_, y_):
-                num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x_, y_)
-                is_good = self.is_good_connection(x, y, edge_index, tile)
+        neighbors = self.get_neighboring_tile_xys(xy)
+        for edge_index, (xy_) in enumerate(neighbors):
+            if not self.is_empty_tile(xy_):
+                num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(xy_)
+                is_good = self.is_good_connection(xy, edge_index, tile)
                 if num_good_connections == 6-1 and is_good:
                     num_perfects += 1
                 elif num_bad_connections > 0 and not is_good:
                     num_meh_connections += 1
         # Compute the number of good and bad connections
-        num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(x, y, tile)
+        num_good_connections, num_bad_connections = self.get_num_good_and_bad_connections(xy, tile)
         if num_good_connections == 6:
             num_perfects += 1
         # Give a proxy score
@@ -248,19 +291,21 @@ class DorfBoard:
         return evaluation
 
 
-    def rank_all_placements(self, tile):
+    def rank_all_placements(self, tile:Tile) -> list:
+        """Ranks every legal placement of a tile based on the evaluations of those placements"""
         placements = self.get_legal_placements(tile)
         evaluations = []
         for placement in placements:
-            x_, y_, tile_ = placement
-            evaluation = self.evaluate_placement(x_, y_, tile_)
+            xy_, tile_ = placement
+            evaluation = self.evaluate_placement(xy_, tile_)
             if not evaluation == DorfBoardResult.ILLEGAL:
                 evaluations.append((placement, evaluation))
         ranked_evaluations = sorted(evaluations, key=lambda x: x[1]['score'], reverse=True)
         return ranked_evaluations
 
 
-    def get_hint(self, tile, top_k=None, threshold=None):
+    def get_hint(self, tile:Tile, top_k=None, threshold=None) -> list:
+        """Returns the evaluations of the best placements of a tile"""
         ranked_evaluations = self.rank_all_placements(tile)
         num_evals = len(ranked_evaluations)
         if not threshold is None:
@@ -271,7 +316,8 @@ class DorfBoard:
         return ranked_evaluations[0:num_evals]
 
 
-    def get_num_tiles_with_status(self, status):
+    def get_num_tiles_with_status(self, status) -> int:
+        """Returns the number of tiles on the board with the given status"""
         if isinstance(status, list):
             match = np.zeros(shape=self.status.shape, dtype=bool)
             for s in status:
@@ -279,10 +325,6 @@ class DorfBoard:
         else:
             match = (self.status == status)
         return np.count_nonzero(match)
-
-
-    def save(self, to_npz):
-        np.savez(to_npz, edges=self.edges, status=self.status)
 
 
 

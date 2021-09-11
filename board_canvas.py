@@ -8,13 +8,13 @@ from constants import *
 Canvas that displays the full game board
 """
 class DorfBoardCanvas(Canvas):
-    def __init__(self, master, board, tile_canvas, pix_width=1300, pix_height=1000, *args, **kwargs):
-        Canvas.__init__(self, master, background='white', width=pix_width, height=pix_height, *args, **kwargs)
+    def __init__(self, master, board, tile_canvas, width=1300, height=1000, *args, **kwargs):
+        Canvas.__init__(self, master, background='white', width=width, height=height, *args, **kwargs)
         
         self.board = board
         self.tile_canvas = tile_canvas
-        self.pix_height = pix_height
-        self.pix_width  = pix_width
+        self.pixel_height = height
+        self.pixel_width  = width
 
         self.hint_hexes = []
         self.selected_hex = None
@@ -33,7 +33,7 @@ class DorfBoardCanvas(Canvas):
         all_loc_y = []
         for x in range(self.board.size):
             for y in range(self.board.size):
-                if not self.board.is_empty_tile(x, y):
+                if not self.board.is_empty_tile((x, y)):
                     loc_x = 1 + 2*x + y
                     loc_y = 1 + 1.5*y
                     all_loc_x.append(loc_x)
@@ -48,12 +48,12 @@ class DorfBoardCanvas(Canvas):
         loc_y_diff = loc_y_max - loc_y_min
         # Compute the scale for a hex tile
         # Add offset if board is too wide or too tall for canvas
-        if self.pix_height/loc_y_diff > self.pix_width/loc_x_diff:
-            hex_edge_len = 2/3**0.5 * self.pix_width / loc_x_diff
-            loc_y_min -= (3**0.5/2 * loc_x_diff/self.pix_width*self.pix_height - loc_y_diff) / 2
+        if self.pixel_height/loc_y_diff > self.pixel_width/loc_x_diff:
+            hex_edge_len = 2/3**0.5 * self.pixel_width / loc_x_diff
+            loc_y_min -= (3**0.5/2 * loc_x_diff/self.pixel_width*self.pixel_height - loc_y_diff) / 2
         else:
-            hex_edge_len = self.pix_height / loc_y_diff
-            loc_x_min -= (2/3**0.5 * loc_y_diff/self.pix_height*self.pix_width - loc_x_diff) / 2
+            hex_edge_len = self.pixel_height / loc_y_diff
+            loc_x_min -= (2/3**0.5 * loc_y_diff/self.pixel_height*self.pixel_width - loc_x_diff) / 2
         # Store scaling and offset parameters
         self.y_scale = hex_edge_len
         self.x_scale = 3**0.5 / 2 * hex_edge_len
@@ -171,7 +171,7 @@ class DorfBoardCanvas(Canvas):
             self.draw_hexagon(x, y, border_color=TileOutlineColors.SELECTED, fill_color=None)
         # Set the connecting edges in the slice canvas
         if self.board.status[x,y] == TileStatus.VALID:
-            connections = self.board.get_connecting_edges(x, y)
+            connections = self.board.get_connecting_edges((x, y))
         else:
             connections = None    
         self.tile_canvas.set_connections(connections)
@@ -184,5 +184,5 @@ class DorfBoardCanvas(Canvas):
         self.hint_hexes = []
         if hints is None:
             return
-        for (x, y, _), _ in hints:
+        for ((x, y), _), _ in hints:
             self.hint_hexes.append((x,y))

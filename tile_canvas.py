@@ -1,9 +1,13 @@
 from tkinter import Canvas
+
+from tile import Tile
+
 from constants import *
 
 
 class HexTileCanvas(Canvas):
-    def __init__(self, master, size, *args, **kwargs):
+    def __init__(self, master, width, height, *args, **kwargs):
+        size = height
         scale = size / 3
         self.x_scale = (scale**2 - (scale/2.0)**2)**0.5     # hexagon width
         self.y_scale = scale                                # half hexagon height
@@ -13,13 +17,13 @@ class HexTileCanvas(Canvas):
         Canvas.__init__(self, master, background='white', width=self.pix_width, height=self.pix_height, *args, **kwargs)
         
         self.selected_slice = None
-        self.edges = 6 * [None]
+        self.tile = Tile(6 * [TileEdge.EMPTY])
         self.select_slice(0)
         self.set_tile(6 * [TileEdge.GRASS])
 
 
     def get_tile(self):
-        return self.edges
+        return self.tile
 
 
     def get_triangle_vertices(self, index, scale=1):
@@ -64,7 +68,7 @@ class HexTileCanvas(Canvas):
 
 
     def set_edge(self, index, feature):
-        self.edges[index] = feature
+        self.tile.edges[index] = feature
         if self.selected_slice == index or self.selected_slice == -1:
             border_color = TileOutlineColors.SELECTED
         else:
@@ -114,10 +118,10 @@ class HexTileCanvas(Canvas):
 
     def rotate(self, reverse=False):
         if reverse:
-            new_edges = self.edges[1:] + self.edges[:1]
+            new_edges = self.tile.edges[1:] + self.tile.edges[:1]
             new_selected_slice = (self.selected_slice - 1) % 6
         else:
-            new_edges = self.edges[5:] + self.edges[:5]
+            new_edges = self.tile.edges[5:] + self.tile.edges[:5]
             new_selected_slice = (self.selected_slice + 1) % 6
         for index, feature in enumerate(new_edges):
             self.set_edge(index, feature)

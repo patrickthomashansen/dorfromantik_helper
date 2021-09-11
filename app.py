@@ -1,5 +1,6 @@
 import argparse
 import os
+from typing import Optional
 
 from tkinter import Tk, Frame, Button, Label
 
@@ -10,11 +11,11 @@ from tile_canvas import HexTileCanvas
 from constants import *
 
 
-class App(Tk):
-    def __init__(self, from_npz, pix_height, pix_width, layout, *args, **kwargs):
+class DorfHelperApp(Tk):
+    def __init__(self, save_file, width, height, layout, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
 
-        board = DorfBoard(from_npz=from_npz)
+        board = DorfBoard(save_file=save_file)
 
         self.boardview_frame = Frame(self, background=Colors.PASTEL_YELLOW, bd=1, relief="sunken")
         self.tile_frame = Frame(self, background=Colors.PASTEL_BLUE, bd=1, relief="sunken")
@@ -22,12 +23,18 @@ class App(Tk):
         self.textlog_frame = Frame(self, background=Colors.PASTEL_RED, bd=1, relief="sunken")
 
         if layout == 0:
+            board_canvas_width = width
+            board_canvas_height = int(3/4*height)
+            tile_canvas_width = tile_canvas_height = int(1/4*height)
             self.boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
             self.tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
             self.control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
             self.textlog_frame.grid(row=1, column=2, rowspan=1, sticky="nsew", padx=2, pady=2)
             self.columnconfigure(2, minsize=500)
         elif layout == 1:
+            board_canvas_width = int(3/4*width)
+            board_canvas_height = height
+            tile_canvas_width = tile_canvas_height = int(1/4*width)
             self.boardview_frame.grid(row=0, column=1, rowspan=3, sticky="nsew", padx=2, pady=2)
             self.tile_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
             self.control_frame.grid(row=1, column=0, rowspan=1, sticky="nsew", padx=2, pady=2)
@@ -35,16 +42,12 @@ class App(Tk):
             self.columnconfigure(0, minsize=500)
             self.rowconfigure(2, minsize=200)
 
-        self.tile_canvas = HexTileCanvas(self.tile_frame, size=300)
+        self.tile_canvas = HexTileCanvas(self.tile_frame, width=tile_canvas_width, height=tile_canvas_height)
         self.tile_canvas.bind('<Button-1>', self.tile_canvas.on_click)
         self.tile_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.tile_canvas.grid(row=0, column=0)
 
-        self.board_canvas = DorfBoardCanvas(self.boardview_frame,
-                                            board=board,
-                                            tile_canvas=self.tile_canvas,
-                                            pix_width=pix_width,
-                                            pix_height=pix_height)
+        self.board_canvas = DorfBoardCanvas(self.boardview_frame, board=board, tile_canvas=self.tile_canvas, width=board_canvas_width, height=board_canvas_height)
         self.board_canvas.bind('<Button-1>', self.board_canvas.on_click)
         self.board_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.board_canvas.draw_board()
@@ -91,7 +94,7 @@ class App(Tk):
 
 
     def manual_save(self):
-        self.board_canvas.board.save(to_npz=MANUAL_SAVE_FILEPATH)
+        self.board_canvas.board.save_board(save_file=MANUAL_SAVE_FILEPATH)
         self.log.config(text="Saved board state")
 
 
@@ -99,7 +102,7 @@ class App(Tk):
         if not self.can_undo:
             self.log.config(text="ERROR: Unable to undo move")
             return
-        board = DorfBoard(from_npz=AUTO_SAVE_FILEPATH)
+        board = DorfBoard(save_file=AUTO_SAVE_FILEPATH)
         self.board_canvas.board = board
         self.board_canvas.draw_board()
         self.log.config(text="Removed last placed tile")
@@ -109,51 +112,51 @@ class App(Tk):
     def place_tile(self):
         if self.board_canvas.selected_hex is None:
             self.log.config(text="ERROR: no selected tile")
-        x, y = self.board_canvas.selected_hex
-        if self.board_canvas.board.status[x,y] != TileStatus.VALID:
-            self.log.config(text="ERROR: Illegal tile placement at ({},{})".format(x, y))
+        xy = self.board_canvas.selected_hex
+        if self.board_canvas.board.status[xy] != TileStatus.VALID:
+            self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
             return
-        self.board_canvas.board.save(to_npz=AUTO_SAVE_FILEPATH)
+        self.board_canvas.board.save_board(save_file=AUTO_SAVE_FILEPATH)
         self.can_undo = True
         tile = self.tile_canvas.get_tile()
-        self.board_canvas.board.place_tile(x, y, tile)
+        self.board_canvas.board.place_tile(xy, tile)
         self.board_canvas.selected_hex = None
         self.board_canvas.set_hint(None)
         self.board_canvas.draw_board()
         self.tile_canvas.set_tile(6 * [TileEdge.GRASS])
         self.tile_canvas.set_connections(None)
-        self.log.config(text="Placed tile at ({},{})".format(x, y))
+        self.log.config(text="Placed tile at {}".format(xy))
 
 
     def remove_tile(self):
         if self.board_canvas.selected_hex == None:
             self.log.config(text="ERROR: No selected hex to remove")
             return
-        x, y = self.board_canvas.selected_hex
-        if self.board_canvas.board.status[x,y] == TileStatus.VALID:
-            self.log.config(text="ERROR: Illegal tile removal at ({},{})".format(x, y))
+        xy = self.board_canvas.selected_hex
+        if self.board_canvas.board.status[xy] == TileStatus.VALID:
+            self.log.config(text="ERROR: Illegal tile removal at {}".format(xy))
             return
-        self.board_canvas.board.save(to_npz=AUTO_SAVE_FILEPATH)
+        self.board_canvas.board.save_board(to_npz=AUTO_SAVE_FILEPATH)
         self.can_undo = True
-        self.board_canvas.board.remove_tile(x, y)
+        self.board_canvas.board.remove_tile(xy)
         self.board_canvas.selected_hex = None
         self.board_canvas.set_hint(None)
         self.board_canvas.delete('all')
         self.board_canvas.draw_board()
-        self.log.config(text="Removed tile at ({},{})".format(x, y))
+        self.log.config(text="Removed tile at {}".format(xy))
 
 
     def sample_tile(self):
         if self.board_canvas.selected_hex == None:
             self.log.config(text="ERROR: No selected hex to sample")
             return
-        x, y = self.board_canvas.selected_hex
-        if self.board_canvas.board.status[x,y] == TileStatus.VALID:
-            self.log.config(text="ERROR: Illegal tile sample at ({},{})".format(x, y))
+        xy = self.board_canvas.selected_hex
+        if self.board_canvas.board.status[xy] == TileStatus.VALID:
+            self.log.config(text="ERROR: Illegal tile sample at {}".format(xy))
             return
-        tile = self.board_canvas.board.edges[x,y]
+        tile = self.board_canvas.board.edges[xy]
         self.tile_canvas.set_tile(tile)
-        self.log.config(text="Tile sampled at ({},{})".format(x, y))
+        self.log.config(text="Tile sampled at {}".format(xy))
 
 
     def display_hint(self):
@@ -163,7 +166,7 @@ class App(Tk):
             hint = self.board_canvas.board.get_hint(tile, top_k=5)
         text_hint = ["x={}, y={}, {} of {} good connections with {} perfects (score = {})".format(
                             x, y, evaluation['good'], evaluation['good'] + evaluation['bad'], evaluation['perfect'], evaluation['score']) \
-                            for (x, y, _), evaluation in hint]
+                            for ((x, y), _), evaluation in hint]
         text_hint = "\n".join(text_hint)
         self.log.config(text=text_hint)
         self.board_canvas.set_hint(hint)
@@ -183,6 +186,11 @@ class App(Tk):
         self.quit()
 
 
+def main(save_file:Optional[str], width:int, height:int, layout:int) -> None:
+    app = DorfHelperApp(save_file=save_file, width=width, height=height, layout=args.layout)
+    app.mainloop()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--load', '-l', action='store_true', help="Load data from last manual save")
@@ -193,9 +201,10 @@ if __name__ == '__main__':
 
     assert(args.layout in [0, 1])
 
-    from_npz = MANUAL_SAVE_FILEPATH if args.load else None
+    save_file = MANUAL_SAVE_FILEPATH if args.load else None
     if not os.path.exists(SAVE_DIR):
         os.mkdir(SAVE_DIR)
 
-    app = App(from_npz=from_npz, pix_height=args.height, pix_width=args.width, layout=args.layout)
-    app.mainloop()
+    main(save_file=save_file, width=args.width, height=args.height, layout=args.layout)
+
+    

@@ -1,5 +1,13 @@
 import os
 
+
+class Colors:
+    PASTEL_YELLOW = "#FFF0C1"
+    PASTEL_BLUE = "#D2E2FB"
+    PASTEL_GREEN = "#CCE4CA"
+    PASTEL_RED = "#F5C2C1"
+
+
 class DorfBoardResult:
     OK = 0
     ENLARGE = -2

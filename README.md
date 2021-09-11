@@ -13,12 +13,12 @@ A basic GUI helper tool for Dorfromantik
 
 * Run `pip install -r requirements.txt` to install the required packages
 
-Setup is complete. Run `python ui.py` to run the program
+Setup is complete. Run `python app.py` to run the program
 
 ### Usage
-`python ui.py --help` provides information on available command line arguments
+`python app.py --help` provides information on available command line arguments
 
 Example usage:
-`python ui.py --width 1000 --height 600 --layout 0`
+`python app.py --width 1000 --height 600 --layout 0`
 
 To load a saved board, add the `--load` argument

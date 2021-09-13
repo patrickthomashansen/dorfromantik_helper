@@ -119,7 +119,10 @@ class DorfHelperApp(Tk):
         self.board_canvas.board.save_board(save_file=AUTO_SAVE_FILEPATH)
         self.can_undo = True
         tile = self.tile_canvas.get_tile()
-        self.board_canvas.board.place_tile(xy, tile)
+        result = self.board_canvas.board.place_tile(xy, tile)
+        if result == DorfBoardResult.ERROR:
+            self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
+            return
         self.board_canvas.selected_hex = None
         self.board_canvas.set_hint(None)
         self.board_canvas.draw_board()
@@ -136,7 +139,7 @@ class DorfHelperApp(Tk):
         if self.board_canvas.board.status[xy] == TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile removal at {}".format(xy))
             return
-        self.board_canvas.board.save_board(to_npz=AUTO_SAVE_FILEPATH)
+        self.board_canvas.board.save_board(save_file=AUTO_SAVE_FILEPATH)
         self.can_undo = True
         self.board_canvas.board.remove_tile(xy)
         self.board_canvas.selected_hex = None
@@ -174,10 +177,14 @@ class DorfHelperApp(Tk):
 
 
     def display_stats(self):
-        text = "{} tiles placed\n".format(self.board_canvas.board.get_num_tiles_with_status([TileStatus.GOOD, TileStatus.PERFECT, TileStatus.IMPERFECT]) - 1)
-        text += "{} perfect tiles\n".format(self.board_canvas.board.get_num_tiles_with_status(TileStatus.PERFECT))
-        text += "{} bad tiles\n".format(self.board_canvas.board.get_num_tiles_with_status(TileStatus.IMPERFECT))
-        text += "{} legal tile locations\n".format(self.board_canvas.board.get_num_tiles_with_status(TileStatus.VALID))
+        num_good = len(self.board_canvas.board.get_locations_with_status(TileStatus.GOOD))
+        num_perfect = len(self.board_canvas.board.get_locations_with_status(TileStatus.PERFECT))
+        num_imperfect = len(self.board_canvas.board.get_locations_with_status(TileStatus.IMPERFECT))
+        num_valid = len(self.board_canvas.board.get_locations_with_status(TileStatus.VALID))
+        text = "{} tiles placed\n".format(num_good+num_perfect+num_imperfect-1)
+        text += "{} perfect tiles\n".format(num_perfect)
+        text += "{} bad tiles\n".format(num_imperfect)
+        text += "{} legal tile locations\n".format(num_valid)
         self.log.config(text=text)
 
 

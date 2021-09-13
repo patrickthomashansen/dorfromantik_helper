@@ -1,4 +1,4 @@
-class Tile:
+class HexTile:
 
     def __init__(self, edges:list):
         self.edges = edges
@@ -9,12 +9,12 @@ class Tile:
 
 
     def __eq__(self, other):
-        if (isinstance(other, Tile)):
+        if (isinstance(other, HexTile)):
             return self.edges == other.edges
 
 
     def __str__(self):
-        return "<Tile: {}>".format(self.edges)
+        return "<HexTile: {}>".format(self.edges)
 
 
     def __repr__(self):
@@ -27,4 +27,4 @@ class Tile:
         for i in range(6):
             rotations.append(tuple(self.edges[i:] + self.edges[:i]))
         rotations = list(set(rotations))    # Remove duplicate rotations
-        return [Tile(list(edges)) for edges in rotations]
+        return [HexTile(list(edges)) for edges in rotations]

@@ -29,32 +29,32 @@ class TileEdge:
 ORIGIN_TILE = 6 * [TileEdge.GRASS]
 
 
-ILLEGAL_CONNECTIONS = [(TileEdge.RIVER, TileEdge.GRASS),
-                       (TileEdge.RIVER, TileEdge.TREES),
-                       (TileEdge.RIVER, TileEdge.HOUSE),
-                       (TileEdge.RIVER, TileEdge.CROPS),
-                       (TileEdge.RIVER, TileEdge.TRAIN),
-                       (TileEdge.TRAIN, TileEdge.WATER),
-                       (TileEdge.TRAIN, TileEdge.GRASS),
-                       (TileEdge.TRAIN, TileEdge.TREES),
-                       (TileEdge.TRAIN, TileEdge.HOUSE),
-                       (TileEdge.TRAIN, TileEdge.CROPS)]
+ILLEGAL_CONNECTIONS = [set([TileEdge.RIVER, TileEdge.GRASS]),
+                       set([TileEdge.RIVER, TileEdge.TREES]),
+                       set([TileEdge.RIVER, TileEdge.HOUSE]),
+                       set([TileEdge.RIVER, TileEdge.CROPS]),
+                       set([TileEdge.RIVER, TileEdge.TRAIN]),
+                       set([TileEdge.TRAIN, TileEdge.WATER]),
+                       set([TileEdge.TRAIN, TileEdge.GRASS]),
+                       set([TileEdge.TRAIN, TileEdge.TREES]),
+                       set([TileEdge.TRAIN, TileEdge.HOUSE]),
+                       set([TileEdge.TRAIN, TileEdge.CROPS])]
 
 
-GOOD_CONNECTIONS = [(TileEdge.GRASS, TileEdge.GRASS),
-                    (TileEdge.TREES, TileEdge.TREES),
-                    (TileEdge.HOUSE, TileEdge.HOUSE),
-                    (TileEdge.CROPS, TileEdge.CROPS),
-                    (TileEdge.WATER, TileEdge.WATER),
-                    (TileEdge.RIVER, TileEdge.RIVER),
-                    (TileEdge.TRAIN, TileEdge.TRAIN),
-                    (TileEdge.STATION, TileEdge.STATION),
-                    (TileEdge.RIVER, TileEdge.WATER),
-                    (TileEdge.WATER, TileEdge.GRASS),
-                    (TileEdge.GRASS, TileEdge.STATION),
-                    (TileEdge.RIVER, TileEdge.STATION),
-                    (TileEdge.WATER, TileEdge.STATION),
-                    (TileEdge.TRAIN, TileEdge.STATION)]
+GOOD_CONNECTIONS = [set([TileEdge.GRASS, TileEdge.GRASS]),
+                    set([TileEdge.TREES, TileEdge.TREES]),
+                    set([TileEdge.HOUSE, TileEdge.HOUSE]),
+                    set([TileEdge.CROPS, TileEdge.CROPS]),
+                    set([TileEdge.WATER, TileEdge.WATER]),
+                    set([TileEdge.RIVER, TileEdge.RIVER]),
+                    set([TileEdge.TRAIN, TileEdge.TRAIN]),
+                    set([TileEdge.STATION, TileEdge.STATION]),
+                    set([TileEdge.RIVER, TileEdge.WATER]),
+                    set([TileEdge.WATER, TileEdge.GRASS]),
+                    set([TileEdge.GRASS, TileEdge.STATION]),
+                    set([TileEdge.RIVER, TileEdge.STATION]),
+                    set([TileEdge.WATER, TileEdge.STATION]),
+                    set([TileEdge.TRAIN, TileEdge.STATION])]
 
 
 class TileStatus:

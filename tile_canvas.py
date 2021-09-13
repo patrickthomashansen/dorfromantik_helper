@@ -1,6 +1,6 @@
 from tkinter import Canvas
 
-from tile import Tile
+from hex_tile import HexTile
 
 from constants import *
 
@@ -17,7 +17,7 @@ class HexTileCanvas(Canvas):
         Canvas.__init__(self, master, background='white', width=self.pix_width, height=self.pix_height, *args, **kwargs)
         
         self.selected_slice = None
-        self.tile = Tile(6 * [TileEdge.EMPTY])
+        self.tile = HexTile(6 * [TileEdge.EMPTY])
         self.select_slice(0)
         self.set_tile(6 * [TileEdge.GRASS])
 

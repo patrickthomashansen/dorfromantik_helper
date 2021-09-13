@@ -1,165 +1,157 @@
 from tkinter import Canvas
 from math import sin, cos, pi
+from typing import Optional
 
 from hex_tile import HexTile
 
 from constants import *
 
 
+def half_plane_test(p1, p2, p3):
+        """The sign of the returned result indicates which side of a half plane a point lies"""
+        return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
+
+
+def is_inside_triangle(self, xy, vertices):
+        """Checks if a point sits inside a triangle given its vertices"""
+        d1 = half_plane_test(xy, vertices[0], vertices[1])
+        d2 = half_plane_test(xy, vertices[1], vertices[2])
+        d3 = half_plane_test(xy, vertices[2], vertices[0])
+        has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
+        has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
+        return not (has_neg and has_pos)
+
+
 class HexTileCanvas(Canvas):
     """Class to draw the preview of the hex tile to be placed onto the Dorfromantik board"""
 
     def __init__(self, master, size, *args, **kwargs):
-        self.height = size
-        self.width = size
-        self.radius = size / 3
-        super().__init__(master, background='white', width=self.width, height=self.height, *args, **kwargs)
+        super().__init__(master, background='white', width=size, height=size, *args, **kwargs)
+        self.size = size
         self.selected_slice = None
-        self.tile = HexTile()
+        self.tile = HexTile(6 * [TileEdge.GRASS])
+        self.neighbors = HexTile()
         self.select_slice(0)
-        self.set_edges(6 * [TileEdge.GRASS])
+        self.draw()
+
+
+    def _get_slice_index_from_pix(self, xy):
+        """Checks if a point sits inside any slice"""
+        for index in range(6):
+            vertices = self._get_slice_vertices(index)
+            if is_inside_triangle(xy, vertices):
+                return index
+        return None
+
+
+    def _get_vertex_angle(self, index:int) -> float:
+        """Returns the angle (in radians) from positive x of the vertex indicated by index"""
+        return pi * (7/6 - index/3)
+
+
+    def _get_slice_vertices(self, index:int, scale:float=1) -> list:
+        """Returns the vertices of a triangular slice of a hexagon"""
+        radius = scale * self.size / 3
+        offset = self.size/2
+        vertices = [(0,0),
+                    (cos(self._get_vertex_angle(index)), -sin(self._get_vertex_angle(index))),
+                    (cos(self._get_vertex_angle(index+1)), -sin(self._get_vertex_angle(index+1)))]
+        vertices = [(radius*x+offset, radius*y+offset) for (x,y) in vertices]
+        return vertices
+
+
+    def _draw_slice(self, index:int, fill_color:Optional[str]=None, border_color:Optional[str]=None, border_width:float=2) -> None:
+        """Draw a triangular slice of a hexagon on the canvas"""
+        vertices = self._get_slice_vertices(index)
+        if fill_color != None:
+            self.create_polygon(vertices, fill=fill_color)
+        if border_color != None:
+            self.create_line(vertices, vertices[0], fill=border_color, width=border_width)
+
+
+    def _draw_neighbor_edge(self, index:int, fill_color:Optional[str]=None, border_color:Optional[str]=None, border_width:float=2) -> None:
+        """Draw an indicator for an adjacent edge of the currently selected hex"""
+        _, a, b = self._get_slice_vertices(index, scale=1.1)
+        _, d, c = self._get_slice_vertices(index, scale=1.2)
+        if fill_color != None:
+            self.create_polygon(a, b, c, d, fill=fill_color)
+        if border_color != None:
+            self.create_line(a, b, c, d, a, fill=border_color, width=border_width)
 
 
     def get_tile(self) -> HexTile:
         return self.tile
 
 
-    def get_triangle_vertices(self, index, scale=1):
-        vertices = [(0,0),
-                    (scale*cos(5/6*pi-index*pi/3), scale*sin(5/6*pi-index*pi/3)),
-                    (scale*cos(5/6*pi-(index+1)*pi/3), scale*sin(5/6*pi-(index+1)*pi/3))]
-        vertices = [(x+self.width/2, y+self.height/2) for (x,y) in vertices]
-        return vertices
-
-
-    def get_triangle_vertices(self, index, scale=1):
-        y_size = self.y_scale
-        x_size = self.x_scale
-        x_offset = 1/2*self.width - x_size
-        y_offset = 1/2*self.height - y_size
-        origin = [(x_size, y_size)] # origin
-        outside_vertices = [((1-scale)*x_size, (2+scale)/2*y_size),
-                            ((1-scale)*x_size, (2-scale)/2*y_size),
-                            (1*x_size,         (1-scale)*y_size),
-                            ((1+scale)*x_size, (2-scale)/2*y_size),
-                            ((1+scale)*x_size, (2+scale)/2*y_size),
-                            (1*x_size,         (1+scale)*y_size)]
-        vertices = origin + [outside_vertices[index], outside_vertices[(index+1)%6]]
-        vertices = [(x+x_offset, y+y_offset) for (x,y) in vertices]
-        return vertices
-
-
-    def draw_slice(self, index, border_color='black', border_width=2, fill_color='blue'):
-        vertices = self.get_triangle_vertices(index)
-        if fill_color != None:
-            self.create_polygon(vertices[0], vertices[1], vertices[2], fill=fill_color)
-        if border_color != None:
-            for i in range(len(vertices)):
-                self.create_line(vertices[i], vertices[(i+1)%len(vertices)], fill=border_color, width=border_width)
-
-
-    def draw_connection(self, index, border_color=None, border_width=2, fill_color='blue'):
-        _, a, b = self.get_triangle_vertices(index, scale=1.1)
-        _, d, c = self.get_triangle_vertices(index, scale=1.2)
-        if fill_color != None:
-            self.create_polygon(a, b, c, d, fill=fill_color)
-        if border_color != None:
-            self.create_line(a, b, fill=border_color, width=border_width)
-            self.create_line(b, c, fill=border_color, width=border_width)
-            self.create_line(c, d, fill=border_color, width=border_width)
-            self.create_line(d, a, fill=border_color, width=border_width)
-
-
-    def set_edge(self, edge, index):
-        self.tile.set_edge(edge, index)
-        if self.selected_slice == index or self.selected_slice == -1:
-            border_color = TileOutlineColors.SELECTED
-        else:
-            border_color = TileOutlineColors.NORMAL
-        self.draw_slice(index, fill_color=get_color_from_feature(edge), border_color=border_color)
-
-
-    def set_edges(self, edges):
-        for index, edge in enumerate(edges):
-            self.set_edge(edge, index)
-        self.draw_slice(self.selected_slice, border_color=TileOutlineColors.SELECTED, fill_color=None)
-
-
-    def set_connections(self, connections):
+    def set_neighbors(self, neighbors):
         for index in range(6):
-            self.draw_connection(index, fill_color=TileFeatureColors.EMPTY, border_color=TileOutlineColors.EMPTY)
-        if not connections:
+            self._draw_neighbor_edge(index, fill_color=TileFeatureColors.EMPTY, border_color=TileOutlineColors.EMPTY)
+        if not neighbors:
             return
-        for index, edge in enumerate(connections):
+        for index, edge in enumerate(neighbors):
             if edge != TileEdge.EMPTY:
-                self.draw_connection(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
+                self._draw_neighbor_edge(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
 
 
     def select_slice(self, index):
-        # remove any existing highlights
-        for i in range(6):
-            self.draw_slice(i, border_color=TileOutlineColors.NORMAL, fill_color=None)
-        # highlight newly selected slice
-        self.draw_slice(index, border_color=TileOutlineColors.SELECTED, fill_color=None)
         self.selected_slice = index
 
 
     def select_all(self):
-        print("Selected slice: ALL")
         self.selected_slice = -1
-        for i in range(6):
-            self.draw_slice(i, border_color=TileOutlineColors.SELECTED, fill_color=None)
+        self.draw()
+
+
+    def select_next(self):
+        self.selected_slice = (self.selected_slice + 1)%6
+
+
+    def select_prev(self):
+        self.selected_slice = (self.selected_slice - 1)%6
 
 
     def set_selected_edge(self, edge, auto_advance=True):
         if self.selected_slice == -1:
             for index in range(6):
-                self.set_edge(edge, index)
+                self.tile.set_edge(edge, index)
         else:
-            self.set_edge(edge, self.selected_slice)
+            self.tile.set_edge(edge, self.selected_slice)
             if auto_advance:
-                self.select_slice((self.selected_slice+1)%6)
+                self.select_next()
+        self.draw()
 
 
-    def rotate(self, reverse=False):
-        if reverse:
-            new_edges = self.tile.edges[1:] + self.tile.edges[:1]
-            new_selected_slice = (self.selected_slice - 1) % 6
+    def rotate(self, clockwise=True):
+        self.tile.rotate(clockwise)
+        if self.selected_slice == -1:
+            return
+        if clockwise:
+            self.select_next()
         else:
-            new_edges = self.tile.edges[5:] + self.tile.edges[:5]
-            new_selected_slice = (self.selected_slice + 1) % 6
-        for index, edge in enumerate(new_edges):
-            self.set_edge(edge, index)
-        if self.selected_slice != -1:
-            self.select_slice(new_selected_slice)
+            self.select_prev()
+        self.draw()
 
 
-    @staticmethod
-    def half_plane_test(p1, p2, p3):
-         return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
-
-
-    def is_inside_triangle(self, point, vertices):
-        d1 = self.half_plane_test(point, vertices[0], vertices[1])
-        d2 = self.half_plane_test(point, vertices[1], vertices[2])
-        d3 = self.half_plane_test(point, vertices[2], vertices[0])
-        has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0)
-        has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0)
-        return not (has_neg and has_pos)
-
-    def get_index_from_pix(self, x, y):
-        all_triangle_vertices = [self.get_triangle_vertices(i) for i in range(6)]
-        for i, vertices in enumerate(all_triangle_vertices):
-            if self.is_inside_triangle((x,y), vertices):
-                return i
-        return None
+    def draw(self) -> None:
+        """Draws the tile on the canvas"""
+        for index, edge in enumerate(self.tile):
+            self._draw_slice(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
+        for index, edge in enumerate(self.neighbors):
+            if edge != TileEdge.EMPTY:
+                self._draw_neighbor_edge(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
+        if self.selected_slice == -1:
+            for index in range(6):
+                self._draw_slice(index, border_color=TileOutlineColors.SELECTED)
+        else:
+            self._draw_slice(self.selected_slice, border_color=TileOutlineColors.SELECTED)
         
 
-    def on_click(self, event):
-        # Get location of newly selected hex tile (if any)
-        index = self.get_index_from_pix(event.x, event.y)
-        print("Selected slice: ", index)
+    def on_click(self, event) -> None:
+        """Checks if a slice has been selected"""
+        print(event)
+        index = self._get_slice_index_from_pix((event.x, event.y))
         if index == None:
             return
-        # Highlight newly selected tile if valid
+        print("Selected slice: ", index)
         self.select_slice(index)
+        self.draw()

@@ -52,7 +52,7 @@ class DorfBoard(HexGrid):
 
     def get_legal_placements(self, tile:HexTile) -> list:
         """Returns a list of all legal placements of a tile"""
-        rotations = tile.get_rotations()
+        rotations = tile.get_all_rotations()
         valid_locations = self.get_locations_with_status(TileStatus.VALID)
         legal_placements = []
         for xy in valid_locations:

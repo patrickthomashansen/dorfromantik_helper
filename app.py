@@ -82,8 +82,8 @@ class DorfHelperApp(Tk):
         
         rotate_controls = []
         frame = self.control_frame
-        rotate_controls.append(Button(frame, text="Rotate CW",  command=lambda: self.tile_canvas.rotate(reverse=False)))
-        rotate_controls.append(Button(frame, text="Rotate CCW", command=lambda: self.tile_canvas.rotate(reverse=True)))
+        rotate_controls.append(Button(frame, text="Rotate CW",  command=lambda: self.tile_canvas.rotate(clockwise=True)))
+        rotate_controls.append(Button(frame, text="Rotate CCW", command=lambda: self.tile_canvas.rotate(clockwise=False)))
         for i, button in enumerate(rotate_controls):
             button.grid(row=i, column=2)
 
@@ -125,8 +125,9 @@ class DorfHelperApp(Tk):
         self.board_canvas.selected_hex = None
         self.board_canvas.set_hint(None)
         self.board_canvas.draw_board()
-        self.tile_canvas.set_edges(6 * [TileEdge.GRASS])
-        self.tile_canvas.set_connections(None)
+        self.tile_canvas.tile.set_edges(6 * [TileEdge.GRASS])
+        self.tile_canvas.set_neighbors(None)
+        self.tile_canvas.draw()
         self.log.config(text="Placed tile at {}".format(xy))
 
 

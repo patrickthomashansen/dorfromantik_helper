@@ -67,7 +67,15 @@ class HexTile:
         return self.status == TileStatus.VALID
 
 
-    def get_rotations(self) -> list:
+    def rotate(self, clockwise:bool=True) -> None:
+        edges = self.get_edges()
+        if clockwise:
+            self.set_edges(edges[5:] + edges[:5])
+        else:
+            self.set_edges(edges[:1] + edges[1:])
+
+
+    def get_all_rotations(self) -> list:
         """Generates a list of all posible rotations of the tile"""
         rotations = []
         for i in range(6):

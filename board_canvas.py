@@ -176,7 +176,8 @@ class DorfBoardCanvas(Canvas):
             connections = self.board.get_connecting_edges(xy)
         else:
             connections = None    
-        self.tile_canvas.set_connections(connections)
+        self.tile_canvas.set_neighbors(connections)
+        self.tile_canvas.draw()
 
 
     def set_hint(self, hints):

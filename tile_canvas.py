@@ -10,7 +10,9 @@ class HexTileCanvas(Canvas):
     """Class to draw the preview of the hex tile to be placed onto the Dorfromantik board"""
 
     def __init__(self, master, size, *args, **kwargs):
-        self.set_scale(size)
+        self.height = size
+        self.width = size
+        self.radius = size / 3
         super().__init__(master, background='white', width=self.width, height=self.height, *args, **kwargs)
         self.selected_slice = None
         self.tile = HexTile()
@@ -18,31 +20,15 @@ class HexTileCanvas(Canvas):
         self.set_edges(6 * [TileEdge.GRASS])
 
 
-    def set_scale(self, size:int) -> None:
-        self.y_scale = size / 3 # half hexagon height
-        self.x_scale = (self.y_scale**2 - (self.y_scale/2.0)**2)**0.5 # hexagon width
-        self.height = 3 * self.y_scale
-        self.width  = 3 * self.x_scale
-
-
     def get_tile(self) -> HexTile:
         return self.tile
 
 
     def get_triangle_vertices(self, index, scale=1):
-        y_size = self.y_scale
-        x_size = self.x_scale
-        x_offset = 1/2*self.width - x_size
-        y_offset = 1/2*self.height - y_size
-        origin = [(x_size, y_size)] # origin
-        outside_vertices = [((1-scale)*x_size, (2+scale)/2*y_size),
-                            ((1-scale)*x_size, (2-scale)/2*y_size),
-                            (1*x_size,         (1-scale)*y_size),
-                            ((1+scale)*x_size, (2-scale)/2*y_size),
-                            ((1+scale)*x_size, (2+scale)/2*y_size),
-                            (1*x_size,         (1+scale)*y_size)]
-        vertices = origin + [outside_vertices[index], outside_vertices[(index+1)%6]]
-        vertices = [(x+x_offset, y+y_offset) for (x,y) in vertices]
+        vertices = [(0,0),
+                    (scale*cos(5/6*pi-index*pi/3), scale*sin(5/6*pi-index*pi/3)),
+                    (scale*cos(5/6*pi-(index+1)*pi/3), scale*sin(5/6*pi-(index+1)*pi/3))]
+        vertices = [(x+self.width/2, y+self.height/2) for (x,y) in vertices]
         return vertices
 
 

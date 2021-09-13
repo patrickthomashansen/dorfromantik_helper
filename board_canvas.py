@@ -10,12 +10,12 @@ Canvas that displays the full game board
 """
 class DorfBoardCanvas(Canvas):
     def __init__(self, master, board, tile_canvas, width=1300, height=1000, *args, **kwargs):
-        Canvas.__init__(self, master, background='white', width=width, height=height, *args, **kwargs)
+        super().__init__(master, background='white', width=width, height=height, *args, **kwargs)
         
         self.board = board
         self.tile_canvas = tile_canvas
-        self.pixel_height = height
-        self.pixel_width  = width
+        self.height = height
+        self.width  = width
 
         self.hint_hexes = []
         self.selected_hex = None
@@ -49,12 +49,12 @@ class DorfBoardCanvas(Canvas):
         loc_y_diff = loc_y_max - loc_y_min
         # Compute the scale for a hex tile
         # Add offset if board is too wide or too tall for canvas
-        if self.pixel_height/loc_y_diff > self.pixel_width/loc_x_diff:
-            hex_edge_len = 2/3**0.5 * self.pixel_width / loc_x_diff
-            loc_y_min -= (3**0.5/2 * loc_x_diff/self.pixel_width*self.pixel_height - loc_y_diff) / 2
+        if self.height/loc_y_diff > self.width/loc_x_diff:
+            hex_edge_len = 2/3**0.5 * self.width / loc_x_diff
+            loc_y_min -= (3**0.5/2 * loc_x_diff/self.width*self.height - loc_y_diff) / 2
         else:
-            hex_edge_len = self.pixel_height / loc_y_diff
-            loc_x_min -= (2/3**0.5 * loc_y_diff/self.pixel_height*self.pixel_width - loc_x_diff) / 2
+            hex_edge_len = self.height / loc_y_diff
+            loc_x_min -= (2/3**0.5 * loc_y_diff/self.height*self.width - loc_x_diff) / 2
         # Store scaling and offset parameters
         self.y_scale = hex_edge_len
         self.x_scale = 3**0.5 / 2 * hex_edge_len
@@ -155,7 +155,6 @@ class DorfBoardCanvas(Canvas):
         """
         Controls behavior of the canvas on a left mouse click
         Used for highlighting a selected hex
-        Sets the location of the selected hex and a tile that represents the surrounding connect
         """
         # Remove highlight from previously selected hex tile
         if self.selected_hex:

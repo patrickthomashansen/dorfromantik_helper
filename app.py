@@ -25,7 +25,7 @@ class DorfHelperApp(Tk):
         if layout == 0:
             board_canvas_width = width
             board_canvas_height = int(3/4*height)
-            tile_canvas_width = tile_canvas_height = int(1/4*height)
+            tile_canvas_size = int(1/4*height)
             self.boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
             self.tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
             self.control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
@@ -34,7 +34,7 @@ class DorfHelperApp(Tk):
         elif layout == 1:
             board_canvas_width = int(3/4*width)
             board_canvas_height = height
-            tile_canvas_width = tile_canvas_height = int(1/4*width)
+            tile_canvas_size = int(1/4*width)
             self.boardview_frame.grid(row=0, column=1, rowspan=3, sticky="nsew", padx=2, pady=2)
             self.tile_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
             self.control_frame.grid(row=1, column=0, rowspan=1, sticky="nsew", padx=2, pady=2)
@@ -42,7 +42,7 @@ class DorfHelperApp(Tk):
             self.columnconfigure(0, minsize=500)
             self.rowconfigure(2, minsize=200)
 
-        self.tile_canvas = HexTileCanvas(self.tile_frame, width=tile_canvas_width, height=tile_canvas_height)
+        self.tile_canvas = HexTileCanvas(self.tile_frame, size=tile_canvas_size)
         self.tile_canvas.bind('<Button-1>', self.tile_canvas.on_click)
         self.tile_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.tile_canvas.grid(row=0, column=0)

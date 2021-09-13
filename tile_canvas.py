@@ -1,4 +1,5 @@
 from tkinter import Canvas
+from math import sin, cos, pi
 
 from hex_tile import HexTile
 
@@ -6,32 +7,33 @@ from constants import *
 
 
 class HexTileCanvas(Canvas):
-    def __init__(self, master, width, height, *args, **kwargs):
-        size = height
-        scale = size / 3
-        self.x_scale = (scale**2 - (scale/2.0)**2)**0.5     # hexagon width
-        self.y_scale = scale                                # half hexagon height
-        self.pix_height = 3 * self.y_scale
-        self.pix_width  = 3 * self.x_scale
-        
-        Canvas.__init__(self, master, background='white', width=self.pix_width, height=self.pix_height, *args, **kwargs)
-        
+    """Class to draw the preview of the hex tile to be placed onto the Dorfromantik board"""
+
+    def __init__(self, master, size, *args, **kwargs):
+        self.set_scale(size)
+        super().__init__(master, background='white', width=self.width, height=self.height, *args, **kwargs)
         self.selected_slice = None
         self.tile = HexTile()
-
         self.select_slice(0)
         self.set_edges(6 * [TileEdge.GRASS])
 
 
-    def get_tile(self):
+    def set_scale(self, size:int) -> None:
+        self.y_scale = size / 3 # half hexagon height
+        self.x_scale = (self.y_scale**2 - (self.y_scale/2.0)**2)**0.5 # hexagon width
+        self.height = 3 * self.y_scale
+        self.width  = 3 * self.x_scale
+
+
+    def get_tile(self) -> HexTile:
         return self.tile
 
 
     def get_triangle_vertices(self, index, scale=1):
         y_size = self.y_scale
         x_size = self.x_scale
-        x_offset = 1/2*self.pix_width - x_size
-        y_offset = 1/2*self.pix_height - y_size
+        x_offset = 1/2*self.width - x_size
+        y_offset = 1/2*self.height - y_size
         origin = [(x_size, y_size)] # origin
         outside_vertices = [((1-scale)*x_size, (2+scale)/2*y_size),
                             ((1-scale)*x_size, (2-scale)/2*y_size),
@@ -39,10 +41,24 @@ class HexTileCanvas(Canvas):
                             ((1+scale)*x_size, (2-scale)/2*y_size),
                             ((1+scale)*x_size, (2+scale)/2*y_size),
                             (1*x_size,         (1+scale)*y_size)]
-        if index == 5:
-            vertices = origin + [outside_vertices[5], outside_vertices[0]]
-        else:
-            vertices = origin + outside_vertices[index:index+2]
+        vertices = origin + [outside_vertices[index], outside_vertices[(index+1)%6]]
+        vertices = [(x+x_offset, y+y_offset) for (x,y) in vertices]
+        return vertices
+
+
+    def get_triangle_vertices(self, index, scale=1):
+        y_size = self.y_scale
+        x_size = self.x_scale
+        x_offset = 1/2*self.width - x_size
+        y_offset = 1/2*self.height - y_size
+        origin = [(x_size, y_size)] # origin
+        outside_vertices = [((1-scale)*x_size, (2+scale)/2*y_size),
+                            ((1-scale)*x_size, (2-scale)/2*y_size),
+                            (1*x_size,         (1-scale)*y_size),
+                            ((1+scale)*x_size, (2-scale)/2*y_size),
+                            ((1+scale)*x_size, (2+scale)/2*y_size),
+                            (1*x_size,         (1+scale)*y_size)]
+        vertices = origin + [outside_vertices[index], outside_vertices[(index+1)%6]]
         vertices = [(x+x_offset, y+y_offset) for (x,y) in vertices]
         return vertices
 

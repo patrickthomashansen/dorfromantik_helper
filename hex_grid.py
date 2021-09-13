@@ -20,33 +20,22 @@ class HexGrid:
             self.load_board(save_file)
 
 
-    @staticmethod
-    def _get_empty_edges(size:int) -> np.array:
-        """Return an array representing edges of an empty board of a given size"""
-        return np.ones([size, size, 6], dtype=np.uint8) * TileEdge.EMPTY
-
-
-    @staticmethod
-    def _get_empty_status(size:int) -> np.array:
-        """Return an array representing status of each tile of an empty board of a given size"""
-        return np.ones([size, size], dtype=np.uint8) * TileStatus.EMPTY
-
-
     def _initialize_new_board(self) -> None:
         """Creates an empty hex grid"""
         # Create a board with empty tiles
         self.size = 8
-        self.edges = self._get_empty_edges(self.size)
-        self.status = self._get_empty_status(self.size)
+        self.tiles = np.empty([size, size], dtype=object)
 
 
     def save_board(self, save_file:str) -> None:
         """Saves a game board to a npz save file"""
+        pass
         np.savez(save_file, edges=self.edges, status=self.status)
 
 
     def load_board(self, save_file:str) -> None:
         """Loads a game board from a npz save file"""
+        pass
         assert os.path.exists(save_file)
         data = np.load(save_file)
         self.edges = data['edges']
@@ -104,7 +93,7 @@ class HexGrid:
     def _get_edge(self, xy:tuple, edge_index:int) -> int:
         """Returns the edge at the given location"""
         x, y = xy
-        return self.edges[x,y,edge_index]
+        return self.tiles[x,y].edges[edge_index]
 
 
     @staticmethod
@@ -133,7 +122,7 @@ class HexGrid:
 
     def is_empty_tile(self, xy:tuple) -> bool:
         """Checks if the given tile location is empty"""
-        return (self.edges[xy] == TileEdge.EMPTY).all()
+        return self.tiles[xy].is_empty()
 
 
     def get_connecting_edges(self, xy:tuple) -> HexTile:
@@ -150,7 +139,7 @@ class HexGrid:
 
     def update_tile_status(self, xy:tuple) -> None:
         """Updates the status of a tile location"""
-        self.status[xy] = self.get_status_from_connections(xy)
+        self.tile[xy].set_status(self.get_status_from_connections(xy))
 
 
     def place_tile(self, xy:tuple, tile:HexTile) -> int:

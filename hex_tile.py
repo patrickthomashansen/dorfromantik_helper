@@ -21,6 +21,10 @@ class HexTile:
         return str(self)
 
 
+    def is_empty(self) -> bool:
+        return self.edges == TileEdge.EMPTY.all()
+
+
     def get_rotations(self) -> list:
         """Generates a list of all posible rotations of the tile"""
         rotations = []

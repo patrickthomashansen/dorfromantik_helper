@@ -17,9 +17,10 @@ class HexTileCanvas(Canvas):
         Canvas.__init__(self, master, background='white', width=self.pix_width, height=self.pix_height, *args, **kwargs)
         
         self.selected_slice = None
-        self.tile = HexTile(6 * [TileEdge.EMPTY])
+        self.tile = HexTile()
+
         self.select_slice(0)
-        self.set_tile(6 * [TileEdge.GRASS])
+        self.set_edges(6 * [TileEdge.GRASS])
 
 
     def get_tile(self):
@@ -67,18 +68,18 @@ class HexTileCanvas(Canvas):
             self.create_line(d, a, fill=border_color, width=border_width)
 
 
-    def set_edge(self, index, feature):
-        self.tile.edges[index] = feature
+    def set_edge(self, edge, index):
+        self.tile.set_edge(edge, index)
         if self.selected_slice == index or self.selected_slice == -1:
             border_color = TileOutlineColors.SELECTED
         else:
             border_color = TileOutlineColors.NORMAL
-        self.draw_slice(index, fill_color=get_color_from_feature(feature), border_color=border_color)
+        self.draw_slice(index, fill_color=get_color_from_feature(edge), border_color=border_color)
 
 
-    def set_tile(self, tile):
-        for index, feature in enumerate(tile):
-            self.set_edge(index, feature)
+    def set_edges(self, edges):
+        for index, edge in enumerate(edges):
+            self.set_edge(edge, index)
         self.draw_slice(self.selected_slice, border_color=TileOutlineColors.SELECTED, fill_color=None)
 
 
@@ -87,9 +88,9 @@ class HexTileCanvas(Canvas):
             self.draw_connection(index, fill_color=TileFeatureColors.EMPTY, border_color=TileOutlineColors.EMPTY)
         if not connections:
             return
-        for index, feature in enumerate(connections):
-            if feature != TileEdge.EMPTY:
-                self.draw_connection(index, fill_color=get_color_from_feature(feature), border_color=TileOutlineColors.NORMAL)
+        for index, edge in enumerate(connections):
+            if edge != TileEdge.EMPTY:
+                self.draw_connection(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
 
 
     def select_slice(self, index):
@@ -100,18 +101,20 @@ class HexTileCanvas(Canvas):
         self.draw_slice(index, border_color=TileOutlineColors.SELECTED, fill_color=None)
         self.selected_slice = index
 
+
     def select_all(self):
         print("Selected slice: ALL")
         self.selected_slice = -1
         for i in range(6):
             self.draw_slice(i, border_color=TileOutlineColors.SELECTED, fill_color=None)
 
-    def set_selected_edge(self, feature, auto_advance=True):
+
+    def set_selected_edge(self, edge, auto_advance=True):
         if self.selected_slice == -1:
-            for i in range(6):
-                self.set_edge(i, feature)
+            for index in range(6):
+                self.set_edge(edge, index)
         else:
-            self.set_edge(self.selected_slice, feature)
+            self.set_edge(edge, self.selected_slice)
             if auto_advance:
                 self.select_slice((self.selected_slice+1)%6)
 
@@ -123,8 +126,8 @@ class HexTileCanvas(Canvas):
         else:
             new_edges = self.tile.edges[5:] + self.tile.edges[:5]
             new_selected_slice = (self.selected_slice + 1) % 6
-        for index, feature in enumerate(new_edges):
-            self.set_edge(index, feature)
+        for index, edge in enumerate(new_edges):
+            self.set_edge(edge, index)
         if self.selected_slice != -1:
             self.select_slice(new_selected_slice)
 

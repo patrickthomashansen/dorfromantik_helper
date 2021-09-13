@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import product
 
 from tkinter import Canvas
 from constants import *
@@ -33,7 +34,7 @@ class DorfBoardCanvas(Canvas):
         all_loc_y = []
         for x in range(self.board.size):
             for y in range(self.board.size):
-                if not self.board.is_empty_tile((x, y)):
+                if not self.board.get_tile((x,y)).is_empty():
                     loc_x = 1 + 2*x + y
                     loc_y = 1 + 1.5*y
                     all_loc_x.append(loc_x)
@@ -118,16 +119,17 @@ class DorfBoardCanvas(Canvas):
         self.set_coordinate_transform_parameters()
         self.set_hex_centers()
         self.delete('all')
-        for x, row in enumerate(self.board.status):
-            for y, status in enumerate(row):
-                if status == TileStatus.EMPTY:
-                    # self.draw_hexagon(x, y, fill_color=None, border_color='purple')
-                    continue
-                elif status == TileStatus.VALID and (x,y) in self.hint_hexes:
-                    fill_color = TileStatusColors.HINT
-                else:
-                    fill_color = get_color_from_status(status)
-                self.draw_hexagon(x, y, fill_color=fill_color)
+        for xy in product(range(self.board.size), range(self.board.size)):
+            status = self.board.get_tile(xy).get_status()
+            if status == TileStatus.EMPTY:
+                # self.draw_hexagon(x, y, fill_color=None, border_color='purple')
+                continue
+            elif status == TileStatus.VALID and xy in self.hint_hexes:
+                fill_color = TileStatusColors.HINT
+            else:
+                fill_color = get_color_from_status(status)
+            x, y = xy
+            self.draw_hexagon(x, y, fill_color=fill_color)
 
 
     @staticmethod
@@ -161,17 +163,18 @@ class DorfBoardCanvas(Canvas):
             self.draw_hexagon(x, y, border_color=TileOutlineColors.NORMAL, fill_color=None)
             self.selected_hex = None
         # Get location of newly selected hex tile (if any)
-        loc = self.get_xy_from_pix(event.x, event.y)
-        if loc == None:
+        xy = self.get_xy_from_pix(event.x, event.y)
+        if xy == None:
             return
         # Highlight newly selected tile if not empty
-        x, y = loc
-        if self.board.status[x,y] != TileStatus.EMPTY:
-            self.selected_hex = loc
+        x, y = xy
+        tile = self.board.get_tile(xy)
+        if not tile.is_empty() or tile.is_valid():
+            self.selected_hex = xy
             self.draw_hexagon(x, y, border_color=TileOutlineColors.SELECTED, fill_color=None)
         # Set the connecting edges in the slice canvas
-        if self.board.status[x,y] == TileStatus.VALID:
-            connections = self.board.get_connecting_edges((x, y))
+        if tile.is_valid():
+            connections = self.board.get_connecting_edges(xy)
         else:
             connections = None    
         self.tile_canvas.set_connections(connections)
@@ -184,5 +187,5 @@ class DorfBoardCanvas(Canvas):
         self.hint_hexes = []
         if hints is None:
             return
-        for ((x, y), _), _ in hints:
-            self.hint_hexes.append((x,y))
+        for (xy, _), _ in hints:
+            self.hint_hexes.append(xy)

@@ -94,7 +94,7 @@ class DorfHelperApp(Tk):
 
 
     def manual_save(self):
-        self.board_canvas.board.save_board(save_file=MANUAL_SAVE_FILEPATH)
+        self.board_canvas.board.save(MANUAL_SAVE_FILEPATH)
         self.log.config(text="Saved board state")
 
 
@@ -102,8 +102,7 @@ class DorfHelperApp(Tk):
         if not self.can_undo:
             self.log.config(text="ERROR: Unable to undo move")
             return
-        board = DorfBoard(save_file=AUTO_SAVE_FILEPATH)
-        self.board_canvas.board = board
+        self.board_canvas.board.load(AUTO_SAVE_FILEPATH)
         self.board_canvas.draw_board()
         self.log.config(text="Removed last placed tile")
         self.can_undo = False
@@ -113,10 +112,10 @@ class DorfHelperApp(Tk):
         if self.board_canvas.selected_hex is None:
             self.log.config(text="ERROR: no selected tile")
         xy = self.board_canvas.selected_hex
-        if self.board_canvas.board.status[xy] != TileStatus.VALID:
+        if self.board_canvas.board.get_tile(xy).get_status() != TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
             return
-        self.board_canvas.board.save_board(save_file=AUTO_SAVE_FILEPATH)
+        self.board_canvas.board.save(AUTO_SAVE_FILEPATH)
         self.can_undo = True
         tile = self.tile_canvas.get_tile()
         result = self.board_canvas.board.place_tile(xy, tile)
@@ -126,7 +125,7 @@ class DorfHelperApp(Tk):
         self.board_canvas.selected_hex = None
         self.board_canvas.set_hint(None)
         self.board_canvas.draw_board()
-        self.tile_canvas.set_tile(6 * [TileEdge.GRASS])
+        self.tile_canvas.set_edges(6 * [TileEdge.GRASS])
         self.tile_canvas.set_connections(None)
         self.log.config(text="Placed tile at {}".format(xy))
 
@@ -136,10 +135,10 @@ class DorfHelperApp(Tk):
             self.log.config(text="ERROR: No selected hex to remove")
             return
         xy = self.board_canvas.selected_hex
-        if self.board_canvas.board.status[xy] == TileStatus.VALID:
+        if self.board_canvas.board.get_tile(xy).is_valid():
             self.log.config(text="ERROR: Illegal tile removal at {}".format(xy))
             return
-        self.board_canvas.board.save_board(save_file=AUTO_SAVE_FILEPATH)
+        self.board_canvas.board.save(AUTO_SAVE_FILEPATH)
         self.can_undo = True
         self.board_canvas.board.remove_tile(xy)
         self.board_canvas.selected_hex = None
@@ -154,11 +153,11 @@ class DorfHelperApp(Tk):
             self.log.config(text="ERROR: No selected hex to sample")
             return
         xy = self.board_canvas.selected_hex
-        if self.board_canvas.board.status[xy] == TileStatus.VALID:
+        if self.board_canvas.board.tiles[xy].status == TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile sample at {}".format(xy))
             return
-        tile = self.board_canvas.board.edges[xy]
-        self.tile_canvas.set_tile(tile)
+        edges = self.board_canvas.board.get_tile(xy).get_edges()
+        self.tile_canvas.set_edges(edges)
         self.log.config(text="Tile sampled at {}".format(xy))
 
 
@@ -179,11 +178,11 @@ class DorfHelperApp(Tk):
     def display_stats(self):
         num_good = len(self.board_canvas.board.get_locations_with_status(TileStatus.GOOD))
         num_perfect = len(self.board_canvas.board.get_locations_with_status(TileStatus.PERFECT))
-        num_imperfect = len(self.board_canvas.board.get_locations_with_status(TileStatus.IMPERFECT))
+        num_BAD = len(self.board_canvas.board.get_locations_with_status(TileStatus.BAD))
         num_valid = len(self.board_canvas.board.get_locations_with_status(TileStatus.VALID))
-        text = "{} tiles placed\n".format(num_good+num_perfect+num_imperfect-1)
+        text = "{} tiles placed\n".format(num_good+num_perfect+num_BAD-1)
         text += "{} perfect tiles\n".format(num_perfect)
-        text += "{} bad tiles\n".format(num_imperfect)
+        text += "{} bad tiles\n".format(num_BAD)
         text += "{} legal tile locations\n".format(num_valid)
         self.log.config(text=text)
 

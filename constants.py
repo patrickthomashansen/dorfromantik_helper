@@ -26,7 +26,7 @@ class TileEdge:
     STATION = 8
 
 
-ORIGIN_TILE = 6 * [TileEdge.GRASS]
+ORIGIN_EDGES = 6 * [TileEdge.GRASS]
 
 
 ILLEGAL_CONNECTIONS = [set([TileEdge.RIVER, TileEdge.GRASS]),
@@ -61,7 +61,7 @@ class TileStatus:
     EMPTY = 0
     GOOD = 1
     PERFECT = 2
-    IMPERFECT = 3
+    BAD = 3
     VALID = 4
 
 
@@ -93,7 +93,7 @@ class TileStatusColors:
     EMPTY = None
     GOOD = 'green'
     PERFECT = 'blue'
-    IMPERFECT = 'red'
+    BAD = 'red'
     VALID = 'white'
     HINT = 'plum1'
 
@@ -141,7 +141,7 @@ def get_color_from_status(status):
     status_to_color = {TileStatus.EMPTY:        TileStatusColors.EMPTY,
                        TileStatus.GOOD:         TileStatusColors.GOOD,
                        TileStatus.PERFECT:      TileStatusColors.PERFECT,
-                       TileStatus.IMPERFECT:    TileStatusColors.IMPERFECT,
+                       TileStatus.BAD:    TileStatusColors.BAD,
                        TileStatus.VALID:        TileStatusColors.VALID}
     if status in status_to_color.keys():
         return status_to_color[status]
@@ -151,5 +151,5 @@ def get_color_from_status(status):
 
 PARENT_DIR = os.path.dirname(__file__)
 SAVE_DIR = os.path.join(PARENT_DIR, "saves/")
-MANUAL_SAVE_FILEPATH = os.path.join(SAVE_DIR, "manual.npz")
-AUTO_SAVE_FILEPATH = os.path.join(SAVE_DIR, "auto.npz")
+MANUAL_SAVE_FILEPATH = os.path.join(SAVE_DIR, "manual.p")
+AUTO_SAVE_FILEPATH = os.path.join(SAVE_DIR, "auto.p")

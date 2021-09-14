@@ -80,7 +80,7 @@ class HexTileCanvas(Canvas):
 
 
     def draw(self) -> None:
-        """Draws the tile on the canvas"""
+        """Draws the tile and its neighboring edges on the canvas"""
         self.delete('all')
         for index, edge in enumerate(self.tile):
             self._draw_slice(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
@@ -115,10 +115,10 @@ class HexTileCanvas(Canvas):
         self.draw()
 
 
-    def set_selected_edge(self, edge, auto_advance=True):
+    def set_selected_edge(self, edge:int, auto_advance=True) -> None:
+        """Sets the currently selected edge (or all edges)"""
         if self.selected_slice == -1:
-            for index in range(6):
-                self.tile.set_edge(edge, index)
+            self.tile.set_edges(6*[edge])
         else:
             self.tile.set_edge(edge, self.selected_slice)
             if auto_advance:
@@ -131,14 +131,11 @@ class HexTileCanvas(Canvas):
         self.draw()
 
 
-    def rotate(self, clockwise=True):
+    def rotate(self, clockwise=True) -> None:
+        """Rotates the edges on the tile, as well as the selected tile"""
         self.tile.rotate(clockwise)
-        if self.selected_slice == -1:
-            return
-        if clockwise:
-            self.select_next()
-        else:
-            self.select_prev()
+        if not self.selected_slice == -1:
+            self.select_next() if clockwise else self.select_prev()
         self.draw()
         
 

@@ -110,7 +110,10 @@ class DorfBoard(HexGrid):
         if not self._is_in_grid(xy) or (xy, tile) not in self.get_legal_placements(tile):
             print("Illegal placement: {}: ".format(xy), tile)
             return DorfBoardResult.ERROR
-        super().place_tile(xy, tile)
+        if self._is_near_border(xy, threshold=1):
+            xy = self._enlarge_and_relocate(xy)
+        self.get_tile(xy).set_edges(tile.edges)
+        self.get_tile(xy).set_status(tile.status)
         self.update_tile_status(xy)
         self.update_neighbors_status(xy)
         return DorfBoardResult.OK

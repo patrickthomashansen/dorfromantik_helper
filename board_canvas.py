@@ -177,7 +177,6 @@ class DorfBoardCanvas(Canvas):
         else:
             connections = None    
         self.tile_canvas.set_neighbors(connections)
-        self.tile_canvas.draw()
 
 
     def set_hint(self, hints):

@@ -166,6 +166,7 @@ class DorfBoard(HexGrid):
         for placement in placements:
             xy_, tile_ = placement
             evaluation = self.evaluate_placement(xy_, tile_)
+            evaluations.append((placement, evaluation))
         ranked_evaluations = sorted(evaluations, key=lambda x: x[1]['score'], reverse=True)
         return ranked_evaluations
 

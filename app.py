@@ -97,7 +97,6 @@ class DorfHelperApp(Tk):
         """Handles the event when the board canvas is clicked"""
         pixel_xy = (event.x, event.y)
         xy = self.board_canvas.get_xy_from_pix(pixel_xy)
-        print(xy)
         if xy is not None and self.board.get_tile(xy).is_empty() and not self.board.get_tile(xy).is_valid():
             xy = None
         self.board_canvas.set_selected_hex(xy)
@@ -130,6 +129,7 @@ class DorfHelperApp(Tk):
     def place_tile(self):
         if self.board_canvas.selected_hex is None:
             self.log.config(text="ERROR: no selected tile")
+            return
         xy = self.board_canvas.selected_hex
         if self.board.get_tile(xy).get_status() != TileStatus.VALID:
             self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
@@ -141,11 +141,11 @@ class DorfHelperApp(Tk):
         if result == DorfBoardResult.ERROR:
             self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
             return
-        self.board_canvas.selected_hex = None
+        self.board_canvas.set_selected_hex(None)
         self.board_canvas.set_hint(None)
-        self.board_canvas.draw(self.board)
         self.tile_canvas.tile.set_edges(6 * [TileEdge.GRASS])
         self.tile_canvas.set_neighbors(None)
+        self.board_canvas.draw(self.board)
         self.tile_canvas.draw()
         self.log.config(text="Placed tile at {}".format(xy))
 
@@ -155,13 +155,13 @@ class DorfHelperApp(Tk):
             self.log.config(text="ERROR: No selected hex to remove")
             return
         xy = self.board_canvas.selected_hex
-        if self.board.get_tile(xy).is_valid():
+        if self.board.get_tile(xy).is_empty():
             self.log.config(text="ERROR: Illegal tile removal at {}".format(xy))
             return
         self.board.save(AUTO_SAVE_FILEPATH)
         self.can_undo = True
         self.board.remove_tile(xy)
-        self.board_canvas.selected_hex = None
+        self.board_canvas.set_selected_hex(None)
         self.board_canvas.set_hint(None)
         self.board_canvas.draw(self.board)
         self.log.config(text="Removed tile at {}".format(xy))
@@ -176,7 +176,8 @@ class DorfHelperApp(Tk):
             self.log.config(text="ERROR: Illegal tile sample at {}".format(xy))
             return
         edges = self.board.get_tile(xy).get_edges()
-        self.tile_canvas.set_edges(edges)
+        self.tile_canvas.tile.set_edges(edges)
+        self.tile_canvas.draw()
         self.log.config(text="Tile sampled at {}".format(xy))
 
 
@@ -191,7 +192,7 @@ class DorfHelperApp(Tk):
         text_hint = "\n".join(text_hint)
         self.log.config(text=text_hint)
         self.board_canvas.set_hint(hint)
-        self.board_canvas.draw()
+        self.board_canvas.draw(self.board)
 
 
     def display_stats(self):

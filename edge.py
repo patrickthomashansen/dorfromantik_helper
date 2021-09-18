@@ -1,7 +1,5 @@
-from __future__ import annotations
-
 from enum import Enum, auto
-from typing import Optional, List, Iterator
+from typing import List
 
 from constants import Color
 
@@ -48,7 +46,16 @@ class Connection:
                                set([Edge.TRAIN, Edge.HOUSE]),
                                set([Edge.TRAIN, Edge.CROPS])]
 
-    __GOOD_CONNECTIONS__ = [set([Edge.RIVER, Edge.WATER]),
+    __GOOD_CONNECTIONS__ = [set([Edge.EMPTY]),
+                            set([Edge.GRASS]),
+                            set([Edge.TREES]),
+                            set([Edge.HOUSE]),
+                            set([Edge.CROPS]),
+                            set([Edge.WATER]),
+                            set([Edge.RIVER]),
+                            set([Edge.TRAIN]),
+                            set([Edge.STATION]),
+                            set([Edge.RIVER, Edge.WATER]),
                             set([Edge.WATER, Edge.GRASS]),
                             set([Edge.GRASS, Edge.STATION]),
                             set([Edge.RIVER, Edge.STATION]),
@@ -56,16 +63,17 @@ class Connection:
                             set([Edge.TRAIN, Edge.STATION])]
 
 
-    def __init__(self, edgeA, edgeB) -> None:
-        self.edgeA = edgeA
-        self.edgeB = edgeB
+    def __init__(self, edgeA: Edge, edgeB: Edge) -> None:
+        self.edges = [edgeA, edgeB]
+
+
+    def get_edges(self) -> List[Edge]:
+        return self.edges
 
 
     def is_legal(self) -> bool:
-        connection = set([self.edgeA, self.edgeB])
-        return not connection in self.__ILLEGAL_CONNECTIONS__
+        return not set(self.edges) in self.__ILLEGAL_CONNECTIONS__
 
 
     def is_good(self) -> bool:
-        connection = set([self.edgeA, self.edgeB])
-        return len(connection) == 1 or connection in self.__GOOD_CONNECTIONS__
+        return set(self.edges) in self.__GOOD_CONNECTIONS__

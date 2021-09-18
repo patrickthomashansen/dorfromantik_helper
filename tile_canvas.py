@@ -84,9 +84,9 @@ class HexTileCanvas(Canvas):
     def draw(self) -> None:
         """Draws the tile and its neighboring edges on the canvas"""
         self.delete('all')
-        for index, edge in enumerate(self.tile):
+        for index, edge in enumerate(self.tile.get_edges()):
             self._draw_slice(index, fill_color=edge.to_color(), border_color=Color.BLACK)
-        for index, edge in enumerate(self.neighbors):
+        for index, edge in enumerate(self.neighbors.get_edges()):
             if edge != Edge.EMPTY:
                 self._draw_neighbor_edge(index, fill_color=edge.to_color(), border_color=Color.BLACK)
         if self.selected_slice == -1:

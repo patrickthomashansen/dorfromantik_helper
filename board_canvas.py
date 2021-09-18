@@ -18,7 +18,7 @@ def euclidian_distance(xy, xy_):
 """
 Canvas that displays the full game board
 """
-class DorfBoardCanvas(Canvas):
+class HexGridCanvas(Canvas):
     def __init__(self, master, board,  width=1300, height=1000, *args, **kwargs):
         super().__init__(master, background='white', width=width, height=height, *args, **kwargs)
         self.width  = width

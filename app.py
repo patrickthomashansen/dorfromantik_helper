@@ -4,10 +4,10 @@ from typing import Optional
 
 from tkinter import Tk, Frame, Button, Label
 
-from board import DorfBoard, DorfBoardResultFlag
-from board_canvas import DorfBoardCanvas
+from grid import HexGrid, HexGridResultFlag
+from board_canvas import HexGridCanvas
 from tile_canvas import HexTileCanvas
-from tile import TileStatus
+from tile import HexTile, TileStatus
 from edge import Edge
 
 from constants import *
@@ -17,7 +17,7 @@ class DorfHelperApp(Tk):
     def __init__(self, save_file, width, height, layout, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
 
-        self.board = DorfBoard(save_file=save_file)
+        self.board = HexGrid(save_file=save_file)
 
         self.boardview_frame = Frame(self, background=Color.PASTEL_YELLOW, bd=1, relief="sunken")
         self.tile_frame = Frame(self, background=Color.PASTEL_BLUE, bd=1, relief="sunken")
@@ -49,7 +49,7 @@ class DorfHelperApp(Tk):
         self.tile_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.tile_canvas.grid(row=0, column=0)
 
-        self.board_canvas = DorfBoardCanvas(self.boardview_frame, board=self.board, width=board_canvas_width, height=board_canvas_height)
+        self.board_canvas = HexGridCanvas(self.boardview_frame, board=self.board, width=board_canvas_width, height=board_canvas_height)
         self.board_canvas.bind('<Button-1>', self.board_canvas_click)
         self.board_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.board_canvas.draw(self.board)
@@ -106,7 +106,7 @@ class DorfHelperApp(Tk):
         if xy is not None and self.board.get_tile(xy).status == TileStatus.VALID:
             connections = self.board.get_connecting_edges(xy)
         else:
-            connections = 6 * [Edge.EMPTY]
+            connections = HexTile(6 * [Edge.EMPTY])
         self.tile_canvas.set_neighbors(connections)
 
         self.board_canvas.draw(self.board)
@@ -140,13 +140,13 @@ class DorfHelperApp(Tk):
         self.can_undo = True
         tile = self.tile_canvas.get_tile()
         result = self.board.place_tile(xy, tile)
-        if result == DorfBoardResultFlag.ERROR:
+        if result == HexGridResultFlag.ERROR:
             self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
             return
         self.board_canvas.set_selected_hex(None)
         self.board_canvas.set_hint(None)
         self.tile_canvas.tile.set_edges(6 * [Edge.GRASS])
-        self.tile_canvas.set_neighbors(6 * [Edge.EMPTY])
+        self.tile_canvas.set_neighbors(HexTile(6 * [Edge.EMPTY]))
         self.board_canvas.draw(self.board)
         self.tile_canvas.draw()
         self.log.config(text="Placed tile at {}".format(xy))

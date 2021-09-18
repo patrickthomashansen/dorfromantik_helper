@@ -25,7 +25,6 @@ class TileStatus(Enum):
         return self.__COLORS__[self.value]
 
 
-
 class HexTile:
     edges: List[Edge]
     num_good_connections: int
@@ -36,25 +35,13 @@ class HexTile:
 
     def __init__(self, edges: Optional[List[Edge]] = None) -> None:
         self.edges = 6 * [Edge.EMPTY] if edges is None else edges.copy()
-        self.update_status(neighborTiles=6*[None])
-
-
-    def __iter__(self) -> Iterator[Edge]:
-        return iter(self.edges)
+        self.clear_status()
 
 
     def __eq__(self, other: HexTile) -> bool:
         if (isinstance(other, HexTile)):
             return self.edges == other.edges
         return False
-
-
-    def __str__(self) -> str:
-        return "<HexTile: {}>".format(self.edges)
-
-
-    def __repr__(self) -> str:
-        return str(self)
 
 
     def get_edges(self) -> List[Edge]:
@@ -77,16 +64,16 @@ class HexTile:
         self.edges = 6*[Edge.EMPTY]
 
 
-    def update_status(self, neighborTiles: List[Optional[HexTile]]) -> None:
+    def update_status(self, neighborTiles: Optional[List[HexTile]]) -> None:
         """Computes the status of the tile given the edges of the neighboring tiles"""
-        # Gather statistics
         self.num_good_connections = 0
         self.num_bad_connections = 0
         self.num_empty_neighbors = 0
+        if neighborTiles is None:
+            self.status = TileStatus.EMPTY if self.is_empty() else TileStatus.GOOD
+            return
+        # Gather statistics
         for index, neighborTile in enumerate(neighborTiles):
-            if neighborTile is None:
-                self.num_empty_neighbors += 1
-                continue
             index_ = (index + 3) % 6
             edge = self.edges[index]
             edge_ = neighborTile.edges[index_]
@@ -97,9 +84,9 @@ class HexTile:
             else:
                 self.num_bad_connections += 1
         # Determine tile status
-        if self.edges == 6*[Edge.EMPTY] and self.num_empty_neighbors == 6:
+        if self.is_empty() and self.num_empty_neighbors == 6:
             self.status = TileStatus.EMPTY
-        elif self.edges == 6*[Edge.EMPTY] and self.num_empty_neighbors < 6:
+        elif self.is_empty() and self.num_empty_neighbors < 6:
             self.status = TileStatus.VALID
         elif self.num_good_connections == 6:
             self.status = TileStatus.PERFECT
@@ -107,6 +94,10 @@ class HexTile:
             self.status = TileStatus.BAD
         else:
             self.status = TileStatus.GOOD
+
+
+    def clear_status(self) -> None:
+        self.update_status(None)
 
 
     def get_status(self) -> TileStatus:

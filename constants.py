@@ -1,5 +1,5 @@
 import os
-from enum import Enum, auto
+
 
 class Color:
     PASTEL_YELLOW = "#FFF0C1"
@@ -20,12 +20,6 @@ class Color:
     CYAN = 'cyan'
     LIGHT_GRAY = 'light gray'
     PURPLE = 'purple'
-
-
-class ResultFlag:
-    OK = 0
-    ILLEGAL = -3
-    ERROR = -1
 
 
 PARENT_DIR = os.path.dirname(__file__)

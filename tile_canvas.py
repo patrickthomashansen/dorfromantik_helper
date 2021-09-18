@@ -2,7 +2,8 @@ from tkinter import Canvas
 from math import sin, cos, pi
 from typing import Optional
 
-from hex_tile import HexTile
+from edge import Edge
+from tile import HexTile
 
 from constants import *
 
@@ -12,7 +13,7 @@ def half_plane_test(p1, p2, p3):
     return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1])
 
 
-def is_inside_triangle(self, xy, vertices):
+def is_inside_triangle(xy, vertices):
     """Checks if a point sits inside a triangle given its vertices"""
     d1 = half_plane_test(xy, vertices[0], vertices[1])
     d2 = half_plane_test(xy, vertices[1], vertices[2])
@@ -29,7 +30,8 @@ class HexTileCanvas(Canvas):
         super().__init__(master, background='white', width=size, height=size, *args, **kwargs)
         self.size = size
         self.selected_slice = None
-        self.tile = HexTile(6 * [TileEdge.GRASS])
+        self.tile = HexTile()
+        self.tile.set_edges(6 * [Edge.GRASS])
         self.neighbors = HexTile()
         self.select_slice(0)
         self.draw()
@@ -83,15 +85,15 @@ class HexTileCanvas(Canvas):
         """Draws the tile and its neighboring edges on the canvas"""
         self.delete('all')
         for index, edge in enumerate(self.tile):
-            self._draw_slice(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
+            self._draw_slice(index, fill_color=edge.to_color(), border_color=Color.BLACK)
         for index, edge in enumerate(self.neighbors):
-            if edge != TileEdge.EMPTY:
-                self._draw_neighbor_edge(index, fill_color=get_color_from_feature(edge), border_color=TileOutlineColors.NORMAL)
+            if edge != Edge.EMPTY:
+                self._draw_neighbor_edge(index, fill_color=edge.to_color(), border_color=Color.BLACK)
         if self.selected_slice == -1:
             for index in range(6):
-                self._draw_slice(index, border_color=TileOutlineColors.SELECTED)
+                self._draw_slice(index, border_color=Color.YELLOW)
         else:
-            self._draw_slice(self.selected_slice, border_color=TileOutlineColors.SELECTED)
+            self._draw_slice(self.selected_slice, border_color=Color.YELLOW)
 
 
     def get_tile(self) -> HexTile:
@@ -126,8 +128,8 @@ class HexTileCanvas(Canvas):
         self.draw()
 
 
-    def set_neighbors(self, neighbors:list) -> None:
-        self.neighbors = HexTile(neighbors)
+    def set_neighbors(self, neighbors: HexTile) -> None:
+        self.neighbors = neighbors
         self.draw()
 
 

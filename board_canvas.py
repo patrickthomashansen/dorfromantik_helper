@@ -4,6 +4,8 @@ from math import sin, cos, pi
 
 from tkinter import Canvas
 
+from tile import HexTile, TileStatus
+
 from constants import *
 
 
@@ -89,7 +91,7 @@ class DorfBoardCanvas(Canvas):
         return list(zip(v_x, v_y))
 
 
-    def draw_tile(self, xy, border_color=TileOutlineColors.NORMAL, border_width=2, fill_color='blue'):
+    def draw_tile(self, xy, border_color=Color.BLACK, border_width=2, fill_color='blue'):
         """Draws a tile on the canvas at a given position"""
         vertices = self._get_tile_vertices(xy)
         if fill_color != None:
@@ -109,12 +111,12 @@ class DorfBoardCanvas(Canvas):
                 # self.draw_tile(x, y, fill_color=None, border_color='purple')
                 continue
             elif status == TileStatus.VALID and xy in self.hint_hexes:
-                fill_color = TileStatusColors.HINT
+                fill_color = Color.PLUM
             else:
-                fill_color = get_color_from_status(status)
+                fill_color = status.to_color()
             self.draw_tile(xy, fill_color=fill_color)
         if self.selected_hex is not None:
-            self.draw_tile(self.selected_hex, border_color=TileOutlineColors.SELECTED, fill_color=None)
+            self.draw_tile(self.selected_hex, border_color=Color.YELLOW, fill_color=None)
 
 
     def get_xy_from_pix(self, pixel_xy):
@@ -139,5 +141,5 @@ class DorfBoardCanvas(Canvas):
         self.hint_hexes = []
         if hints is None:
             return
-        for (xy, _), _ in hints:
-            self.hint_hexes.append(xy)
+        for evaluator in hints:
+            self.hint_hexes.append(evaluator.xy)

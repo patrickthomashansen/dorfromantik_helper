@@ -4,9 +4,11 @@ from typing import Optional
 
 from tkinter import Tk, Frame, Button, Label
 
-from board import DorfBoard
+from board import DorfBoard, DorfBoardResultFlag
 from board_canvas import DorfBoardCanvas
 from tile_canvas import HexTileCanvas
+from tile import TileStatus
+from edge import Edge
 
 from constants import *
 
@@ -17,10 +19,10 @@ class DorfHelperApp(Tk):
 
         self.board = DorfBoard(save_file=save_file)
 
-        self.boardview_frame = Frame(self, background=Colors.PASTEL_YELLOW, bd=1, relief="sunken")
-        self.tile_frame = Frame(self, background=Colors.PASTEL_BLUE, bd=1, relief="sunken")
-        self.control_frame = Frame(self, background=Colors.PASTEL_GREEN, bd=1, relief="sunken")
-        self.textlog_frame = Frame(self, background=Colors.PASTEL_RED, bd=1, relief="sunken")
+        self.boardview_frame = Frame(self, background=Color.PASTEL_YELLOW, bd=1, relief="sunken")
+        self.tile_frame = Frame(self, background=Color.PASTEL_BLUE, bd=1, relief="sunken")
+        self.control_frame = Frame(self, background=Color.PASTEL_GREEN, bd=1, relief="sunken")
+        self.textlog_frame = Frame(self, background=Color.PASTEL_RED, bd=1, relief="sunken")
 
         if layout == 0:
             board_canvas_width = width
@@ -69,14 +71,14 @@ class DorfHelperApp(Tk):
         frame = self.control_frame
         fn = self.tile_canvas.set_selected_edge
         tile_controls.append(Button(frame, text="ALL", command=self.tile_canvas.select_all))
-        tile_controls.append(Button(frame, text="Grass",   command=lambda: fn(TileEdge.GRASS)))
-        tile_controls.append(Button(frame, text="Trees",   command=lambda: fn(TileEdge.TREES)))
-        tile_controls.append(Button(frame, text="House",   command=lambda: fn(TileEdge.HOUSE)))
-        tile_controls.append(Button(frame, text="Crops",   command=lambda: fn(TileEdge.CROPS)))
-        tile_controls.append(Button(frame, text="River",   command=lambda: fn(TileEdge.RIVER)))
-        tile_controls.append(Button(frame, text="Train",   command=lambda: fn(TileEdge.TRAIN)))
-        tile_controls.append(Button(frame, text="Water",   command=lambda: fn(TileEdge.WATER)))
-        tile_controls.append(Button(frame, text="Station", command=lambda: fn(TileEdge.STATION)))
+        tile_controls.append(Button(frame, text="Grass",   command=lambda: fn(Edge.GRASS)))
+        tile_controls.append(Button(frame, text="Trees",   command=lambda: fn(Edge.TREES)))
+        tile_controls.append(Button(frame, text="House",   command=lambda: fn(Edge.HOUSE)))
+        tile_controls.append(Button(frame, text="Crops",   command=lambda: fn(Edge.CROPS)))
+        tile_controls.append(Button(frame, text="River",   command=lambda: fn(Edge.RIVER)))
+        tile_controls.append(Button(frame, text="Train",   command=lambda: fn(Edge.TRAIN)))
+        tile_controls.append(Button(frame, text="Water",   command=lambda: fn(Edge.WATER)))
+        tile_controls.append(Button(frame, text="Station", command=lambda: fn(Edge.STATION)))
         for i, button in enumerate(tile_controls):
             button.grid(row=i, column=1)
         
@@ -97,14 +99,14 @@ class DorfHelperApp(Tk):
         """Handles the event when the board canvas is clicked"""
         pixel_xy = (event.x, event.y)
         xy = self.board_canvas.get_xy_from_pix(pixel_xy)
-        if xy is not None and self.board.get_tile(xy).is_empty() and not self.board.get_tile(xy).is_valid():
+        if xy is not None and self.board.get_tile(xy).is_empty() and not self.board.get_tile(xy).status == TileStatus.VALID:
             xy = None
         self.board_canvas.set_selected_hex(xy)
 
-        if xy is not None and self.board.get_tile(xy).is_valid():
+        if xy is not None and self.board.get_tile(xy).status == TileStatus.VALID:
             connections = self.board.get_connecting_edges(xy)
         else:
-            connections = None    
+            connections = 6 * [Edge.EMPTY]
         self.tile_canvas.set_neighbors(connections)
 
         self.board_canvas.draw(self.board)
@@ -138,13 +140,13 @@ class DorfHelperApp(Tk):
         self.can_undo = True
         tile = self.tile_canvas.get_tile()
         result = self.board.place_tile(xy, tile)
-        if result == DorfBoardResult.ERROR:
+        if result == DorfBoardResultFlag.ERROR:
             self.log.config(text="ERROR: Illegal tile placement at {}".format(xy))
             return
         self.board_canvas.set_selected_hex(None)
         self.board_canvas.set_hint(None)
-        self.tile_canvas.tile.set_edges(6 * [TileEdge.GRASS])
-        self.tile_canvas.set_neighbors(None)
+        self.tile_canvas.tile.set_edges(6 * [Edge.GRASS])
+        self.tile_canvas.set_neighbors(6 * [Edge.EMPTY])
         self.board_canvas.draw(self.board)
         self.tile_canvas.draw()
         self.log.config(text="Placed tile at {}".format(xy))
@@ -187,8 +189,13 @@ class DorfHelperApp(Tk):
         if not hint:
             hint = self.board.get_hint(tile, top_k=5)
         text_hint = ["x={}, y={}, {} of {} good connections with {} perfects (score = {})".format(
-                            x, y, evaluation['good'], evaluation['good'] + evaluation['bad'], evaluation['perfect'], evaluation['score']) \
-                            for ((x, y), _), evaluation in hint]
+                            evaluator.xy[0],
+                            evaluator.xy[1],
+                            evaluator.get_num_good_connections(),
+                            evaluator.get_num_good_connections() + evaluator.get_num_bad_connections(),
+                            evaluator.get_num_neighbors_perfected() + (evaluator.get_num_good_connections() == 6),
+                            evaluator.get_score()) \
+                            for evaluator in hint]
         text_hint = "\n".join(text_hint)
         self.log.config(text=text_hint)
         self.board_canvas.set_hint(hint)

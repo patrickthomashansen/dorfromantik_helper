@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from typing import List
 
-from constants import Color
+from utils import Color
 
 
 EdgeIndex = int

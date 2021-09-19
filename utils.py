@@ -1,4 +1,15 @@
 import os
+from typing import Tuple, List
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
+
+GridCoordinate = Tuple[int, int]
+PixelCoordinate = Tuple[float, float]
+
+
+def is_point_inside_polygon(point: PixelCoordinate, polygon: List[PixelCoordinate]) -> bool:
+    return Polygon(polygon).contains(Point(point))
 
 
 class Color:

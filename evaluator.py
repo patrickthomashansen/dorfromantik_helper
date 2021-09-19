@@ -5,13 +5,11 @@ from typing import Optional, List, Tuple, Callable
 
 from edge import Edge, Connection
 from tile import HexTile, TileStatus
-
-
-Coordinate = Tuple[int, int]
+from utils import GridCoordinate
 
 
 class PlacementEvaluator:
-    def __init__(self, tile: HexTile, xy: Coordinate, neighborTiles: List[HexTile]) -> None:
+    def __init__(self, tile: HexTile, xy: GridCoordinate, neighborTiles: List[HexTile]) -> None:
         self.tile = tile
         self.xy = xy
         self.neighborTiles = neighborTiles
@@ -33,8 +31,8 @@ class PlacementEvaluator:
 
 
     def get_num_bad_connections(self) -> int:
-        return sum([not connection.is_good() and not Edge.EMPTY in connection.get_edges() \
-                        for _, connection in self.zip_neighbor_tiles_and_connections()])
+        return sum([not connection.is_good() and not neighborTile.is_empty() \
+                        for neighborTile, connection in self.zip_neighbor_tiles_and_connections()])
 
 
     def get_num_neighbors_perfected(self) -> int:

@@ -8,9 +8,7 @@ import pickle
 from edge import Edge, EdgeIndex, Connection
 from tile import HexTile, TileStatus
 from evaluator import PlacementEvaluator
-
-
-Coordinate = Tuple[int, int]
+from utils import GridCoordinate
 
 
 class HexGridResultFlag(Flag):
@@ -33,13 +31,13 @@ class HexGrid:
 
 
     @staticmethod
-    def _get_neighboring_tile_xys(xy: Coordinate) -> List[Coordinate]:
+    def _get_neighboring_tile_xys(xy: GridCoordinate) -> List[GridCoordinate]:
         """Returns a list of coordinates of all possible neighbors of a tile"""
         x, y = xy
         return [(x-1,y), (x,y-1), (x+1,y-1), (x+1,y), (x,y+1), (x-1,y+1)]
 
 
-    def _get_neighbor_tiles(self, xy: Coordinate) -> List[HexTile]:
+    def _get_neighbor_tiles(self, xy: GridCoordinate) -> List[HexTile]:
         """Returns a list of tiles that surround the given loaction"""
         return [self.get_tile(xy_) for xy_ in self._get_neighboring_tile_xys(xy)]
 
@@ -55,30 +53,30 @@ class HexGrid:
         self.tiles = self._get_empty_tiles(size)
         xy = self._get_origin_xy()
         origin_tile = self.get_tile(xy)
-        origin_tile.set_edges(6*[Edge.GRASS])
-        origin_tile.update_status(neighborTiles=6*[None])
+        origin_tile.set_edges(HexTile.ORIGIN_EDGES)
+        self.update_tile_status(xy)
         self.update_neighbors_status(xy)
 
 
-    def _get_origin_xy(self) -> Coordinate:
+    def _get_origin_xy(self) -> GridCoordinate:
         """Returns the coordinates of the origin tile"""
         return int(self.size/2 - 1), int(self.size/2 - 1)
 
 
-    def _is_in_grid(self, xy: Coordinate) -> bool:
+    def _is_in_grid(self, xy: GridCoordinate) -> bool:
         """Checks if the given coordinates sit within the bounds of the board"""
         x, y = xy
         return x >= 0 and y >= 0 and x < self.size and y < self.size
 
 
-    def _is_on_border(self, xy: Coordinate) -> bool:
+    def _is_on_border(self, xy: GridCoordinate) -> bool:
         """Checks if the given coordinates sit on the border of the game board"""
         assert self._is_in_grid(xy)
         x, y = xy
         return x == 0 or y == 0 or x == self.size-1 or y == self.size-1
 
 
-    def _is_near_border(self, xy: Coordinate, threshold: int = 1) -> bool:
+    def _is_near_border(self, xy: GridCoordinate, threshold: int = 1) -> bool:
         """Checks if the given coordinates lay within some distance of the border of the game board"""
         assert self._is_in_grid(xy)
         x, y = xy
@@ -96,14 +94,14 @@ class HexGrid:
         self.size = new_size
 
 
-    def _enlarge_and_relocate(self, xy: Coordinate, pad_size: int = 2) -> Coordinate:
+    def _enlarge_and_relocate(self, xy: GridCoordinate, pad_size: int = 2) -> GridCoordinate:
         """Enlarges the game board and returns the new location of the given coordinates"""
         self._enlarge_board(pad_size)
         x, y = xy
         return x+pad_size, y+pad_size
 
 
-    def _get_opposite_edge_location(self, xy: Coordinate, index: EdgeIndex) -> Tuple[Coordinate, EdgeIndex]:
+    def _get_opposite_edge_location(self, xy: GridCoordinate, index: EdgeIndex) -> Tuple[GridCoordinate, EdgeIndex]:
         """Returns the tile location and edge index of the opposing edge"""
         xy_ = self._get_neighboring_tile_xys(xy)[index]
         index_ = (index + 3) % 6
@@ -121,12 +119,12 @@ class HexGrid:
         self.size = len(self.tiles)
 
 
-    def get_tile(self, xy: Coordinate) -> HexTile:
+    def get_tile(self, xy: GridCoordinate) -> HexTile:
         assert self._is_in_grid(xy)
         return self.tiles[xy]
 
 
-    def get_connecting_edges(self, xy: Coordinate) -> HexTile:
+    def get_connecting_edges(self, xy: GridCoordinate) -> HexTile:
         """Returns a tile representing all opposite edges given a location"""
         connections = []
         for index in range(6):
@@ -138,7 +136,7 @@ class HexGrid:
         return HexTile(connections)
 
 
-    def get_locations_with_status(self, status: TileStatus) -> List[Coordinate]:
+    def get_locations_with_status(self, status: TileStatus) -> List[GridCoordinate]:
         """Returns a list of all tile locations with a given status"""
         result = []
         for xy in product(range(self.size), range(self.size)):
@@ -147,7 +145,7 @@ class HexGrid:
         return result
 
 
-    def is_legal_placement(self, xy: Coordinate, tile: HexTile) -> bool:
+    def is_legal_placement(self, xy: GridCoordinate, tile: HexTile) -> bool:
         """Checks if the given tile placement is legal"""
         for index in range(6):
             edge = tile.get_edge(index)
@@ -160,7 +158,7 @@ class HexGrid:
         return True
 
 
-    def get_legal_placements(self, tile: HexTile) -> List[Tuple[Coordinate, HexTile]]:
+    def get_legal_placements(self, tile: HexTile) -> List[Tuple[GridCoordinate, HexTile]]:
         """Returns a list of all legal placements of a tile"""
         rotations = tile.get_all_rotations()
         valid_locations = self.get_locations_with_status(TileStatus.VALID)
@@ -172,19 +170,19 @@ class HexGrid:
         return legal_placements
 
 
-    def update_tile_status(self, xy: Coordinate) -> None:
+    def update_tile_status(self, xy: GridCoordinate) -> None:
         """Updates the status of a tile"""
         neighborTiles = self._get_neighbor_tiles(xy)
         self.get_tile(xy).update_status(neighborTiles)
 
 
-    def update_neighbors_status(self, xy: Coordinate) -> None:
+    def update_neighbors_status(self, xy: GridCoordinate) -> None:
         """Updates the status of all neighbors to a tile"""
         for xy_ in self._get_neighboring_tile_xys(xy):
             self.update_tile_status(xy_)
 
 
-    def place_tile(self, xy: Coordinate, tile: HexTile) -> HexGridResultFlag:
+    def place_tile(self, xy: GridCoordinate, tile: HexTile) -> HexGridResultFlag:
         """Attempts to place a tile at a given location and updates the status of neighbors"""
         if not self._is_in_grid(xy) or (xy, tile) not in self.get_legal_placements(tile):
             print("Illegal placement: {}: ".format(xy), tile)
@@ -203,13 +201,12 @@ class HexGrid:
             print("Illegal removal: {}: ".format(xy))
             return HexGridResultFlag.ERROR
         self.get_tile(xy).clear_edges()
-        self.get_tile(xy).clear_status()
         self.update_tile_status(xy)
         self.update_neighbors_status(xy)
         return HexGridResultFlag.OK
 
 
-    def rank_all_placements(self, tile:HexTile) -> list:
+    def rank_all_placements(self, tile:HexTile) -> List[PlacementEvaluator]:
         """Ranks every legal placement of a tile based on the evaluations of those placements"""
         placements = self.get_legal_placements(tile)
         evaluators = []

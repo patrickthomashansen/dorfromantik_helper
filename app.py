@@ -5,21 +5,29 @@ from typing import Optional
 from tkinter import Tk, Frame, Button, Label
 
 from grid import HexGrid, HexGridResultFlag
-from board_canvas import HexGridCanvas
+from grid_canvas import HexGridCanvas
 from tile_canvas import HexTileCanvas
 from tile import HexTile, TileStatus
 from edge import Edge
 
-from constants import *
+from utils import Color, MANUAL_SAVE_FILEPATH, AUTO_SAVE_FILEPATH
 
 
 class DorfHelperApp(Tk):
-    def __init__(self, save_file, width, height, layout, *args, **kwargs):
+    def __init__(
+        self,
+        save_file: Optional[str],
+        width: int,
+        height: int,
+        layout: int,
+        *args,
+        **kwargs
+    ) -> None:
         Tk.__init__(self, *args, **kwargs)
 
         self.board = HexGrid(save_file=save_file)
 
-        self.boardview_frame = Frame(self, background=Color.PASTEL_YELLOW, bd=1, relief="sunken")
+        self.board_frame = Frame(self, background=Color.PASTEL_YELLOW, bd=1, relief="sunken")
         self.tile_frame = Frame(self, background=Color.PASTEL_BLUE, bd=1, relief="sunken")
         self.control_frame = Frame(self, background=Color.PASTEL_GREEN, bd=1, relief="sunken")
         self.textlog_frame = Frame(self, background=Color.PASTEL_RED, bd=1, relief="sunken")
@@ -28,7 +36,7 @@ class DorfHelperApp(Tk):
             board_canvas_width = width
             board_canvas_height = int(3/4*height)
             tile_canvas_size = int(1/4*height)
-            self.boardview_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
+            self.board_frame.grid(row=0, column=0, columnspan=3, sticky="nsew", padx=2, pady=2)
             self.tile_frame.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
             self.control_frame.grid(row=1, column=1, rowspan=1, sticky="nsew", padx=2, pady=2)
             self.textlog_frame.grid(row=1, column=2, rowspan=1, sticky="nsew", padx=2, pady=2)
@@ -37,7 +45,7 @@ class DorfHelperApp(Tk):
             board_canvas_width = int(3/4*width)
             board_canvas_height = height
             tile_canvas_size = int(1/4*width)
-            self.boardview_frame.grid(row=0, column=1, rowspan=3, sticky="nsew", padx=2, pady=2)
+            self.board_frame.grid(row=0, column=1, rowspan=3, sticky="nsew", padx=2, pady=2)
             self.tile_frame.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
             self.control_frame.grid(row=1, column=0, rowspan=1, sticky="nsew", padx=2, pady=2)
             self.textlog_frame.grid(row=2, column=0, rowspan=1, sticky="nsew", padx=2, pady=2)
@@ -49,7 +57,7 @@ class DorfHelperApp(Tk):
         self.tile_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.tile_canvas.grid(row=0, column=0)
 
-        self.board_canvas = HexGridCanvas(self.boardview_frame, board=self.board, width=board_canvas_width, height=board_canvas_height)
+        self.board_canvas = HexGridCanvas(self.board_frame, width=board_canvas_width, height=board_canvas_height)
         self.board_canvas.bind('<Button-1>', self.board_canvas_click)
         self.board_canvas.grid(row=0, column=0, padx=5, pady=5)
         self.board_canvas.draw(self.board)
@@ -95,7 +103,7 @@ class DorfHelperApp(Tk):
         self.can_undo = False
 
 
-    def board_canvas_click(self, event):
+    def board_canvas_click(self, event) -> None:
         """Handles the event when the board canvas is clicked"""
         pixel_xy = (event.x, event.y)
         xy = self.board_canvas.get_xy_from_pix(pixel_xy)
@@ -106,19 +114,19 @@ class DorfHelperApp(Tk):
         if xy is not None and self.board.get_tile(xy).status == TileStatus.VALID:
             connections = self.board.get_connecting_edges(xy)
         else:
-            connections = HexTile(6 * [Edge.EMPTY])
+            connections = HexTile(HexTile.EMPTY_EDGES)
         self.tile_canvas.set_neighbors(connections)
 
         self.board_canvas.draw(self.board)
         self.tile_canvas.draw()
 
 
-    def manual_save(self):
+    def manual_save(self) -> None:
         self.board.save(MANUAL_SAVE_FILEPATH)
         self.log.config(text="Saved board state")
 
 
-    def undo(self):
+    def undo(self) -> None:
         if not self.can_undo:
             self.log.config(text="ERROR: Unable to undo move")
             return
@@ -128,7 +136,7 @@ class DorfHelperApp(Tk):
         self.can_undo = False
 
 
-    def place_tile(self):
+    def place_tile(self) -> None:
         if self.board_canvas.selected_hex is None:
             self.log.config(text="ERROR: no selected tile")
             return
@@ -145,14 +153,14 @@ class DorfHelperApp(Tk):
             return
         self.board_canvas.set_selected_hex(None)
         self.board_canvas.set_hint(None)
-        self.tile_canvas.tile.set_edges(6 * [Edge.GRASS])
-        self.tile_canvas.set_neighbors(HexTile(6 * [Edge.EMPTY]))
+        self.tile_canvas.tile.set_edges(HexTile.ORIGIN_EDGES)
+        self.tile_canvas.set_neighbors(HexTile(HexTile.EMPTY_EDGES))
         self.board_canvas.draw(self.board)
         self.tile_canvas.draw()
         self.log.config(text="Placed tile at {}".format(xy))
 
 
-    def remove_tile(self):
+    def remove_tile(self) -> None:
         if self.board_canvas.selected_hex == None:
             self.log.config(text="ERROR: No selected hex to remove")
             return
@@ -169,7 +177,7 @@ class DorfHelperApp(Tk):
         self.log.config(text="Removed tile at {}".format(xy))
 
 
-    def sample_tile(self):
+    def sample_tile(self) -> None:
         if self.board_canvas.selected_hex == None:
             self.log.config(text="ERROR: No selected hex to sample")
             return
@@ -183,7 +191,7 @@ class DorfHelperApp(Tk):
         self.log.config(text="Tile sampled at {}".format(xy))
 
 
-    def display_hint(self):
+    def display_hint(self) -> None:
         tile = self.tile_canvas.get_tile()
         hint = self.board.get_hint(tile, threshold=2, top_k=10)
         if not hint:
@@ -202,7 +210,7 @@ class DorfHelperApp(Tk):
         self.board_canvas.draw(self.board)
 
 
-    def display_stats(self):
+    def display_stats(self) -> None:
         num_good = len(self.board.get_locations_with_status(TileStatus.GOOD))
         num_perfect = len(self.board.get_locations_with_status(TileStatus.PERFECT))
         num_BAD = len(self.board.get_locations_with_status(TileStatus.BAD))
@@ -214,12 +222,12 @@ class DorfHelperApp(Tk):
         self.log.config(text=text)
 
 
-    def correct_quit(self):
+    def correct_quit(self) -> None:
         self.destroy()
         self.quit()
 
 
-def main(save_file:Optional[str], width:int, height:int, layout:int) -> None:
+def main(save_file: Optional[str], width: int, height: int, layout: int) -> None:
     app = DorfHelperApp(save_file=save_file, width=width, height=height, layout=args.layout)
     app.mainloop()
 

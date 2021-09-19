@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import Optional, List, Iterator
 
 from edge import Edge, EdgeIndex, Connection
-from constants import Color
+from utils import Color
 
 
 class TileStatus(Enum):
@@ -26,15 +26,15 @@ class TileStatus(Enum):
 
 
 class HexTile:
-    edges: List[Edge]
-    num_good_connections: int
-    num_bad_connections: int
-    num_empty_neighbors: int
-    status: TileStatus
+    EMPTY_EDGES = 6 * [Edge.EMPTY]
+    ORIGIN_EDGES = 6 * [Edge.GRASS]
 
 
     def __init__(self, edges: Optional[List[Edge]] = None) -> None:
-        self.edges = 6 * [Edge.EMPTY] if edges is None else edges.copy()
+        if edges is None:
+            self.clear_edges()
+        else:
+            self.edges = edges.copy()
         self.clear_status()
 
 
@@ -61,7 +61,7 @@ class HexTile:
 
 
     def clear_edges(self) -> None:
-        self.edges = 6*[Edge.EMPTY]
+        self.edges = HexTile.EMPTY_EDGES
 
 
     def update_status(self, neighborTiles: Optional[List[HexTile]]) -> None:
@@ -79,14 +79,14 @@ class HexTile:
             edge_ = neighborTile.edges[index_]
             if neighborTile.is_empty():
                 self.num_empty_neighbors += 1
-            elif Connection(edge, edge_).is_good():
-                self.num_good_connections += 1
-            else:
+            elif not Connection(edge, edge_).is_good() and not edge_ == Edge.EMPTY:
                 self.num_bad_connections += 1
+            else:
+                self.num_good_connections += 1
         # Determine tile status
         if self.is_empty() and self.num_empty_neighbors == 6:
             self.status = TileStatus.EMPTY
-        elif self.is_empty() and self.num_empty_neighbors < 6:
+        elif self.is_empty():
             self.status = TileStatus.VALID
         elif self.num_good_connections == 6:
             self.status = TileStatus.PERFECT
@@ -105,7 +105,7 @@ class HexTile:
 
 
     def is_empty(self) -> bool:
-        return self.get_edges() == 6*[Edge.EMPTY]
+        return self.get_edges() == HexTile.EMPTY_EDGES
 
 
     def rotate(self, clockwise: bool = True) -> None:

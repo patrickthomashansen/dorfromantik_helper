@@ -4,6 +4,7 @@ from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 
+EdgeIndex = int
 GridCoordinate = Tuple[int, int]
 PixelCoordinate = Tuple[float, float]
 

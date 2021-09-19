@@ -5,11 +5,10 @@ from typing import Optional, List, Tuple
 
 from tkinter import Canvas
 
-from edge import EdgeIndex
 from tile import HexTile, TileStatus
 from evaluator import PlacementEvaluator
 from grid import HexGrid
-from utils import Color, GridCoordinate, PixelCoordinate, is_point_inside_polygon
+from utils import Color, EdgeIndex, GridCoordinate, PixelCoordinate, is_point_inside_polygon
 
 
 """

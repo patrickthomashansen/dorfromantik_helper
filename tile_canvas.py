@@ -2,10 +2,10 @@ from tkinter import Canvas
 from math import sin, cos, pi
 from typing import Optional, List, Tuple
 
-from edge import Edge, EdgeIndex
+from edge import Edge
 from tile import HexTile
 
-from utils import Color, is_point_inside_polygon, PixelCoordinate
+from utils import Color, is_point_inside_polygon, PixelCoordinate, EdgeIndex
 
 
 class HexTileCanvas(Canvas):

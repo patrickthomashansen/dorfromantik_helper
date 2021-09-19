@@ -5,10 +5,10 @@ from itertools import product
 import pickle
 
 
-from edge import Edge, EdgeIndex, Connection
+from edge import Edge, Connection
 from tile import HexTile, TileStatus
 from evaluator import PlacementEvaluator
-from utils import GridCoordinate
+from utils import GridCoordinate, EdgeIndex
 
 
 class HexGridResultFlag(Flag):

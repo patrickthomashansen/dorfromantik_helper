@@ -4,9 +4,6 @@ from typing import List
 from utils import Color
 
 
-EdgeIndex = int
-
-
 class Edge(Enum):
     EMPTY = auto()
     GRASS = auto()

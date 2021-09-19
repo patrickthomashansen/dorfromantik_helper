@@ -10,7 +10,7 @@ from tile_canvas import HexTileCanvas
 from tile import HexTile, TileStatus
 from edge import Edge
 
-from utils import Color, MANUAL_SAVE_FILEPATH, AUTO_SAVE_FILEPATH
+from utils import Color, MANUAL_SAVE_FILEPATH, AUTO_SAVE_FILEPATH, SAVE_DIR
 
 
 class DorfHelperApp(Tk):

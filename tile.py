@@ -3,8 +3,8 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import Optional, List, Iterator
 
-from edge import Edge, EdgeIndex, Connection
-from utils import Color
+from edge import Edge, Connection
+from utils import Color, EdgeIndex
 
 
 class TileStatus(Enum):

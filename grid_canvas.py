@@ -32,12 +32,12 @@ class HexGridCanvas(Canvas):
     def _get_tile_position_bounds(self, board: HexGrid, margin: float = 0) -> Tuple[float, float, float, float]:
         """Computes the bounds of tile positions spacially"""
         left = top = float("inf")
-        right = bottom = 0
+        right = bottom = -float("inf")
         for xy in product(range(board.size), range(board.size)):
             if not board.get_tile(xy).is_empty():
                 x, y = xy
-                pos_x = 1 + 2*x + y
-                pos_y = 1 + 1.5*y
+                pos_x = 2*x + y
+                pos_y = 1.5*y
                 left = min(left, pos_x-margin)
                 right = max(right, pos_x+margin)
                 top = min(top, pos_y-margin)
@@ -51,22 +51,22 @@ class HexGridCanvas(Canvas):
         left, right, top, bottom = self._get_tile_position_bounds(board, margin=4)
         board_width = right - left
         board_height = bottom - top
-        # Offsets in either x or y direction depending on the relative shapes of the board and canvas
+        # Offset in either x or y direction depending on the relative shapes of the board and canvas
         if self.height/self.width > board_height/board_width:
             self.tile_radius = self.width / board_width / self.hex_ratio
             top -= (self.height*board_width/self.width - board_height) * self.hex_ratio / 2
         else:
             self.tile_radius = self.height / board_height
             left -= (self.width*board_height/self.height - board_width) / self.hex_ratio / 2
-        self.pixel_offset_xy = (self.tile_radius * left, self.tile_radius * self.hex_ratio * top)
+        self.pixel_offset_xy = (self.tile_radius * self.hex_ratio * left, self.tile_radius * top)
 
 
     def _get_tile_center_pixel(self, xy: GridCoordinate) -> PixelCoordinate:
         """Returns the pixel coordinate of the center of a given tile position"""
         x, y = xy
         pixel_offset_x, pixel_offset_y = self.pixel_offset_xy
-        pixel_x = self.tile_radius * self.hex_ratio * (1 + 2*x + y) - pixel_offset_x
-        pixel_y = self.tile_radius * (1 + 1.5*y) - pixel_offset_y
+        pixel_x = self.tile_radius * self.hex_ratio * (2*x + y) - pixel_offset_x
+        pixel_y = self.tile_radius * (1.5*y) - pixel_offset_y
         return pixel_x, pixel_y
 
 

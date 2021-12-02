@@ -21,6 +21,7 @@ class HexGridCanvas(Canvas):
         self.height = height
         self.hint_hexes = []
         self.selected_hex = None
+        self.view_edges = False
         self.hex_ratio = abs(cos(self._get_vertex_angle(0))) # Ratio of a hexagon's height to its width
 
 
@@ -91,6 +92,23 @@ class HexGridCanvas(Canvas):
             self.create_polygon(vertices, fill=fill_color)
         if not border_color is None:
                 self.create_line(vertices, vertices[0], fill=border_color, width=border_width)
+    
+
+    def draw_edges(
+        self,
+        xy: GridCoordinate,
+        fill_colors: Optional[List[str]] = None,
+        border_color: Optional[str] = None,
+        border_width: float = 2
+    ) -> None:
+        """Draws a tile on the canvas at a given position"""
+        center = self._get_tile_center_pixel(xy)
+        vertices = self._get_tile_vertices(xy)
+        if not fill_colors is None:
+            for i in range(6):
+                self.create_polygon([center, vertices[i], vertices[(i+1)%6]], fill=fill_colors[i])
+        if not border_color is None:
+                self.create_line(vertices, vertices[0], fill=border_color, width=border_width)
 
 
     def draw(self, board: HexGrid) -> None:
@@ -102,13 +120,21 @@ class HexGridCanvas(Canvas):
             if status == TileStatus.EMPTY:
                 # self.draw_tile(x, y, fill_color=None, border_color='purple')
                 continue
-            elif status == TileStatus.VALID and xy in self.hint_hexes:
-                fill_color = Color.PLUM
+            if self.view_edges:
+                fill_colors = [edge.to_color() for edge in board.get_tile(xy).get_edges()]
+                self.draw_edges(xy, fill_colors=fill_colors, border_color=Color.BLACK)
             else:
-                fill_color = status.to_color()
-            self.draw_tile(xy, fill_color=fill_color, border_color=Color.BLACK)
+                if status == TileStatus.VALID and xy in self.hint_hexes:
+                    fill_color = Color.PLUM
+                else:
+                    fill_color = status.to_color()
+                self.draw_tile(xy, fill_color=fill_color, border_color=Color.BLACK)
         if self.selected_hex is not None:
             self.draw_tile(self.selected_hex, border_color=Color.YELLOW)
+    
+
+    def toggle_view(self) -> None:
+        self.view_edges = not self.view_edges
 
 
     def get_xy_from_pix(self, pixel_xy: PixelCoordinate) -> None:

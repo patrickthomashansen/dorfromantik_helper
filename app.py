@@ -64,14 +64,15 @@ class DorfHelperApp(Tk):
 
         board_controls = []
         frame = self.control_frame
-        board_controls.append(Button(frame, text="Place",  command=self.place_tile))
-        board_controls.append(Button(frame, text="Hint",   command=self.display_hint))
-        board_controls.append(Button(frame, text="Sample", command=self.sample_tile))
-        board_controls.append(Button(frame, text="Remove", command=self.remove_tile))
-        board_controls.append(Button(frame, text="Undo",   command=self.undo))
-        board_controls.append(Button(frame, text="Stats",  command=self.display_stats))
-        board_controls.append(Button(frame, text="Save",   command=self.manual_save))
-        board_controls.append(Button(frame, text="Quit",   command=self.correct_quit))
+        board_controls.append(Button(frame, text="Place",       command=self.place_tile))
+        board_controls.append(Button(frame, text="Hint",        command=self.display_hint))
+        board_controls.append(Button(frame, text="Sample",      command=self.sample_tile))
+        board_controls.append(Button(frame, text="Remove",      command=self.remove_tile))
+        board_controls.append(Button(frame, text="Undo",        command=self.undo))
+        board_controls.append(Button(frame, text="Stats",       command=self.display_stats))
+        board_controls.append(Button(frame, text="Toggle View", command=self.toggle_view))
+        board_controls.append(Button(frame, text="Save",        command=self.manual_save))
+        board_controls.append(Button(frame, text="Quit",        command=self.correct_quit))
         for i, button in enumerate(board_controls):
             button.grid(row=i, column=0)
 
@@ -207,6 +208,11 @@ class DorfHelperApp(Tk):
         text_hint = "\n".join(text_hint)
         self.log.config(text=text_hint)
         self.board_canvas.set_hint(hint)
+        self.board_canvas.draw(self.board)
+    
+
+    def toggle_view(self) -> None:
+        self.board_canvas.toggle_view()
         self.board_canvas.draw(self.board)
 
 

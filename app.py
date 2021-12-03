@@ -241,7 +241,7 @@ def main(save_file: Optional[str], width: int, height: int, layout: int) -> None
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--load', '-l', action='store_true', help="Load data from last manual save")
-    parser.add_argument('--height', '-y', type=int, default=1000, help="Pixel height of the board display")
+    parser.add_argument('--height', '-y', type=int, default=1300, help="Pixel height of the board display")
     parser.add_argument('--width', '-x', type=int, default=1500, help="Pixel width of the board display")
     parser.add_argument('--layout', type=int, default=0, help="Layout of the widgets in the window")
     args = parser.parse_args()

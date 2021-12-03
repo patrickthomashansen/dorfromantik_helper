@@ -53,12 +53,12 @@ class HexGridCanvas(Canvas):
         board_width = right - left
         board_height = bottom - top
         # Offset in either x or y direction depending on the relative shapes of the board and canvas
-        if self.height/self.width > board_height/board_width:
+        if self.hex_ratio*self.height/self.width > board_height/board_width:
             self.tile_radius = self.width / board_width / self.hex_ratio
-            top -= (self.height*board_width/self.width - board_height) * self.hex_ratio / 2
+            top -= (self.hex_ratio*self.height*board_width/self.width - board_height) / 2
         else:
             self.tile_radius = self.height / board_height
-            left -= (self.width*board_height/self.height - board_width) / self.hex_ratio / 2
+            left -= (self.width*board_height/self.height/self.hex_ratio - board_width) * self.hex_ratio / 2
         self.pixel_offset_xy = (self.tile_radius * self.hex_ratio * left, self.tile_radius * top)
 
 
